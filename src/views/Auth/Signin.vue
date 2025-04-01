@@ -221,11 +221,11 @@
                           Keep me logged in
                         </label>
                       </div>
-                      <router-link
+                      <!-- <router-link
                         to="/reset-password"
                         class="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
                         >Forgot password?</router-link
-                      >
+                      > -->
                     </div>
                     <!-- Button -->
                     <div>
