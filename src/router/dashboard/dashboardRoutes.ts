@@ -5,7 +5,7 @@ import UserProfile from '@/views/Others/UserProfile.vue'
 export default [
   {
     path: '/',
-    name: 'Ecommerce',
+    name: 'Dashboard',
     component: Ecommerce,
     meta: { title: 'eCommerce Dashboard' },
   },

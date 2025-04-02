@@ -24,7 +24,7 @@
   </admin-layout>
 </template>
 
-<script>
+<script lang="ts">
 import AdminLayout from '../components/layout/AdminLayout.vue'
 import EcommerceMetrics from '../components/ecommerce/EcommerceMetrics.vue'
 import MonthlyTarget from '../components/ecommerce/MonthlySale.vue'
@@ -42,6 +42,7 @@ export default {
     StatisticsChart,
     RecentOrders,
   },
+  // eslint-disable-next-line vue/multi-word-component-names
   name: 'Ecommerce',
 }
 </script>
