@@ -6,12 +6,12 @@ export default [
     path: '/signin',
     name: 'Signin',
     component: Signin,
-    meta: { title: 'Signin' },
+    meta: { title: 'Signin', requiresAuth: false },
   },
   {
     path: '/signup',
     name: 'Signup',
     component: Signup,
-    meta: { title: 'Signup' },
+    meta: { title: 'Signup', requiresAuth: false },
   },
 ]

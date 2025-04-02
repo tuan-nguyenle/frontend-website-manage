@@ -9,7 +9,7 @@ export default [
     meta: { title: 'Blank' },
   },
   {
-    path: '/error-404',
+    path: '/:pathMatch(.*)*',
     name: '404 Error',
     component: FourZeroFour,
     meta: { title: '404 Error' },

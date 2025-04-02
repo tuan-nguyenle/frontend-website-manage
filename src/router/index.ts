@@ -27,18 +27,15 @@ const router = createRouter({
 export default router
 
 router.beforeEach((to, from, next) => {
-  // Set page title from route metadata
-  document.title = `${to.meta.title}`
-
   const isAuthenticated = authService.isAuthenticated()
-  const requiresAuth = to.meta.requiresAuth
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth !== false)
 
   if (requiresAuth && !isAuthenticated) {
-    return next({ name: 'Signin' })
+    next({ name: 'Signin' })
   }
 
-  if (to.name === 'Signin' && isAuthenticated) {
-    return next({ name: 'Dashboard' })
+  if (isAuthenticated && to.name && ['Signin', 'Signup'].includes(to.name.toString())) {
+    next({ name: 'Dashboard' })
   }
 
   next()
