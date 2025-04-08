@@ -1,12 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import dashboardRoutes from './dashboard/dashboardRoutes'
-import formRoutes from './form/formRoutes'
-import tableRoutes from './table/tableRoutes'
-import chartRoutes from './chart/chartRoutes'
-import uiRoutes from './uiElement/uiRoutes'
-import miscRoutes from './misc/miscRoutes'
-import authRouter from './auth/authRouter'
-import { authService } from '@/services'
+import dashboardRoutes from './dashboard/dashboard.router'
+import formRoutes from './form/form.router'
+import tableRoutes from './table/table.router'
+import chartRoutes from './chart/chart.router'
+import uiRoutes from './uiElement/ui.router'
+import miscRoutes from './misc/misc.router'
+import authRouter from './auth/auth.router'
+import { useAuthStore } from '@/store/auth.store'
+import { storeToRefs } from 'pinia'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -27,15 +28,15 @@ const router = createRouter({
 export default router
 
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = authService.isAuthenticated()
+  const verifyAuthenticated = storeToRefs(useAuthStore()).isAuthenticated.value
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth !== false)
 
-  if (requiresAuth && !isAuthenticated) {
-    next({ name: 'Signin' })
+  if (requiresAuth && !verifyAuthenticated) {
+    return next({ name: 'Signin' })
   }
 
-  if (isAuthenticated && to.name && ['Signin', 'Signup'].includes(to.name.toString())) {
-    next({ name: 'Dashboard' })
+  if (verifyAuthenticated && to.name && ['Signin', 'Signup'].includes(to.name.toString())) {
+    return next({ name: 'Dashboard' })
   }
 
   next()

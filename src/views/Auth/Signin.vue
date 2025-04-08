@@ -106,23 +106,23 @@
                   v-if="errorMessage"
                   class="mb-4 p-3 bg-error-50 text-error-600 rounded-lg text-sm"
                 >
-                  {{ errorMessage }}
+                  {{ errorMessage.errors }}
                 </div>
                 <form @submit.prevent="handleSubmit">
                   <div class="space-y-5">
-                    <!-- Email -->
+                    <!-- Username -->
                     <div>
                       <label
-                        for="email"
+                        for="username"
                         class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                       >
-                        Email<span class="text-error-500">*</span>
+                        Username <span class="text-error-500">*</span>
                       </label>
                       <input
-                        v-model="email"
-                        type="email"
-                        id="email"
-                        name="email"
+                        v-model="username"
+                        type="text"
+                        id="username"
+                        name="username"
                         placeholder="info@gmail.com"
                         class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                         autocomplete="off"
@@ -134,7 +134,7 @@
                         for="password"
                         class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                       >
-                        Password<span class="text-error-500">*</span>
+                        Password <span class="text-error-500">*</span>
                       </label>
                       <div class="relative">
                         <input
@@ -308,9 +308,10 @@ import { ref } from 'vue'
 import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
 import { authService } from '@/services'
+import router from '@/router'
 
-const email = ref('')
-const password = ref('')
+const username = ref('tuan2512')
+const password = ref('Tuan@2512')
 const keepLoggedIn = ref(false)
 const showPassword = ref(false)
 
@@ -328,19 +329,20 @@ const handleSubmit = async () => {
     isLoading.value = true
 
     // Validate input
-    if (!email.value || !password.value) {
-      errorMessage.value = 'Email and password are required'
+    if (!username.value || !password.value) {
+      errorMessage.value = 'username and password are required'
       return
     }
 
-    await authService.login({
-      email: email.value,
-      password: password.value,
+    await authService.login(
+      username.value,
+      password.value,
       // keepLoggedIn: keepLoggedIn.value,
-    })
-    // Navigate to dashboard on successful login
+    )
+
+    await router.push('/')
   } catch (error: unknown) {
-    errorMessage.value = (error as Record<string, unknown>)?.error ?? 'Invalid email or password'
+    errorMessage.value = error ?? 'Invalid username or password'
   } finally {
     isLoading.value = false
   }

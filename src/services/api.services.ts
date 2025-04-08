@@ -5,8 +5,8 @@ import type {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios'
-import type { ApiError, ApiResponse } from '@/type/api.types'
-import { authService } from './auth/auth'
+import type { ApiError, ApiResponse } from '@/types/api.types'
+import { authService } from './auth/auth.services'
 
 class ApiService {
   private api: AxiosInstance
@@ -14,6 +14,7 @@ class ApiService {
   constructor() {
     this.api = axios.create({
       baseURL: this.API_BASE_URL || 'http:/localhost/8000/api',
+      // withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -60,7 +61,7 @@ class ApiService {
 
         // Transform error to consistent format
         const apiError: ApiError = {
-          message: error.response?.data?.message || 'An unknown error occurred',
+          // message: error.response?.data?.message || 'An unknown error occurred',
           status: error.response?.status || 500,
           errors: error.response?.data?.error,
         }

@@ -6,13 +6,14 @@ export interface Credentials {
 
 export interface User {
   id: string
+  name: User
   email: string
+  username: string
   // roles?: string[]
 }
 
 export interface AuthResponse {
   accessToken: string
-  refreshToken: string
   user: User
 }
 
