@@ -5,8 +5,8 @@ import type {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios'
-import type { ApiError, ApiResponse } from '@/types/api.types'
-import { authService } from './auth/auth.services'
+import type { ApiError, ApiResponse } from '@/types'
+import { authService } from '@/services'
 
 class ApiService {
   private api: AxiosInstance
@@ -54,7 +54,9 @@ class ApiService {
             return this.api(originalRequest)
           } catch (refreshError) {
             // If refresh fails, log out the user
+            authService.clearToken()
             authService.logout()
+            // window.location.href = '/login'
             return Promise.reject(refreshError)
           }
         }

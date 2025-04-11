@@ -5,7 +5,7 @@
       @click.prevent="toggleDropdown"
     >
       <span class="mr-3 overflow-hidden rounded-full h-11 w-11">
-        <img src="/images/user/owner.jpg" alt="User" />
+        <img :src="avatarLink" :alt="avatarLink" />
       </span>
 
       <span class="block mr-1 font-medium text-theme-sm">{{ user?.name || 'Guest' }} </span>
@@ -61,12 +61,14 @@
 import { UserCircleIcon, ChevronDownIcon, LogoutIcon, SettingsIcon, InfoCircleIcon } from '@/icons'
 import { RouterLink } from 'vue-router'
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useAuthStore } from '@/store/auth.store'
-import type { User } from '@/types/auth.types'
 import router from '@/router'
+import type { User } from '@/types'
+import { useAuthStore } from '@/store'
 
 const authStore = useAuthStore()
 const user = useAuthStore().user as User | null
+
+const avatarLink = ref(import.meta.env.VITE_API_IMAGE_URL + user?.image_path)
 
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLInputElement | null>(null)

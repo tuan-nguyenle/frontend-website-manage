@@ -13,6 +13,7 @@
     @mouseenter="!isExpanded && (isHovered = true)"
     @mouseleave="isHovered = false"
   >
+    <!-- Logo Section -->
     <div :class="['py-8 flex', !isExpanded && !isHovered ? 'lg:justify-center' : 'justify-start']">
       <router-link to="/">
         <img
@@ -34,6 +35,8 @@
         <img v-else src="/images/logo/logo-icon.svg" alt="Logo" width="32" height="32" />
       </router-link>
     </div>
+
+    <!-- Menu Section -->
     <div class="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
       <nav class="mb-6">
         <div class="flex flex-col gap-4">
@@ -51,6 +54,7 @@
             </h2>
             <ul class="flex flex-col gap-4">
               <li v-for="(item, index) in menuGroup.items" :key="item.name">
+                <!-- Menu Item with Submenu -->
                 <button
                   v-if="item.subItems"
                   @click="toggleSubmenu(groupIndex, index)"
@@ -85,6 +89,8 @@
                     ]"
                   />
                 </button>
+
+                <!-- Menu Item without Submenu -->
                 <router-link
                   v-else-if="item.path"
                   :to="item.path"
@@ -107,12 +113,9 @@
                     item.name
                   }}</span>
                 </router-link>
-                <transition
-                  @enter="startTransition"
-                  @after-enter="endTransition"
-                  @before-leave="startTransition"
-                  @after-leave="endTransition"
-                >
+
+                <!-- Submenu Items -->
+                <transition name="slide">
                   <div
                     v-show="
                       isSubmenuOpen(groupIndex, index) && (isExpanded || isHovered || isMobileOpen)
@@ -131,32 +134,6 @@
                           ]"
                         >
                           {{ subItem.name }}
-                          <span class="flex items-center gap-1 ml-auto">
-                            <span
-                              v-if="subItem.new"
-                              :class="[
-                                'menu-dropdown-badge',
-                                {
-                                  'menu-dropdown-badge-active': isActive(subItem.path),
-                                  'menu-dropdown-badge-inactive': !isActive(subItem.path),
-                                },
-                              ]"
-                            >
-                              new
-                            </span>
-                            <span
-                              v-if="subItem.pro"
-                              :class="[
-                                'menu-dropdown-badge',
-                                {
-                                  'menu-dropdown-badge-active': isActive(subItem.path),
-                                  'menu-dropdown-badge-inactive': !isActive(subItem.path),
-                                },
-                              ]"
-                            >
-                              pro
-                            </span>
-                          </span>
                         </router-link>
                       </li>
                     </ul>
@@ -167,147 +144,57 @@
           </div>
         </div>
       </nav>
+
+      <!-- Sidebar Widget -->
       <SidebarWidget v-if="isExpanded || isHovered || isMobileOpen" />
     </div>
   </aside>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+// import BoxCubeIcon from '@/icons/BoxCubeIcon.vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-
-import {
-  GridIcon,
-  CalenderIcon,
-  UserCircleIcon,
-  // ChatIcon,
-  // MailIcon,
-  // DocsIcon,
-  PieChartIcon,
-  ChevronDownIcon,
-  HorizontalDots,
-  PageIcon,
-  TableIcon,
-  ListIcon,
-  PlugInIcon,
-} from '../../icons'
+import { ChevronDownIcon, HorizontalDots } from '@/icons'
 import SidebarWidget from './SidebarWidget.vue'
-import BoxCubeIcon from '@/icons/BoxCubeIcon.vue'
 import { useSidebar } from '@/composables/useSidebar'
+import { useMenuStore } from '@/store'
 
+const menuStore = useMenuStore()
 const route = useRoute()
-
 const { isExpanded, isMobileOpen, isHovered, openSubmenu } = useSidebar()
 
-const menuGroups = [
-  {
-    title: 'Menu',
-    items: [
-      {
-        icon: GridIcon,
-        name: 'Dashboard',
-        subItems: [{ name: 'Ecommerce', path: '/', pro: false }],
-      },
-      {
-        icon: CalenderIcon,
-        name: 'Calendar',
-        path: '/calendar',
-      },
-      {
-        icon: UserCircleIcon,
-        name: 'User Profile',
-        path: '/profile',
-      },
+// Define menuGroups as a computed property
+const menuGroups = computed(() => menuStore.menuGroups)
 
-      {
-        name: 'Forms',
-        icon: ListIcon,
-        subItems: [{ name: 'Form Elements', path: '/form-elements', pro: false }],
-      },
-      {
-        name: 'Tables',
-        icon: TableIcon,
-        subItems: [{ name: 'Basic Tables', path: '/basic-tables', pro: false }],
-      },
-      {
-        name: 'Pages',
-        icon: PageIcon,
-        subItems: [
-          { name: 'Black Page', path: '/blank', pro: false },
-          { name: '404 Page', path: '/error-404', pro: false },
-        ],
-      },
-    ],
-  },
-  {
-    title: 'Others',
-    items: [
-      {
-        icon: PieChartIcon,
-        name: 'Charts',
-        subItems: [
-          { name: 'Line Chart', path: '/line-chart', pro: false },
-          { name: 'Bar Chart', path: '/bar-chart', pro: false },
-        ],
-      },
-      {
-        icon: BoxCubeIcon,
-        name: 'Ui Elements',
-        subItems: [
-          { name: 'Alerts', path: '/alerts', pro: false },
-          { name: 'Avatars', path: '/avatars', pro: false },
-          { name: 'Badge', path: '/badge', pro: false },
-          { name: 'Buttons', path: '/buttons', pro: false },
-          { name: 'Images', path: '/images', pro: false },
-          { name: 'Videos', path: '/videos', pro: false },
-        ],
-      },
-      {
-        icon: PlugInIcon,
-        name: 'Authentication',
-        subItems: [
-          { name: 'Signin', path: '/signin', pro: false },
-          { name: 'Signup', path: '/signup', pro: false },
-        ],
-      },
-      // ... Add other menu items here
-    ],
-  },
-]
+// Fetch menu on mount
+onMounted(() => {
+  menuStore.fetchMenu()
+})
 
-const isActive = (path) => route.path === path
+const isActive = (path: string) => route.path === path
 
-const toggleSubmenu = (groupIndex, itemIndex) => {
+const toggleSubmenu = (groupIndex: unknown, itemIndex: unknown) => {
   const key = `${groupIndex}-${itemIndex}`
   openSubmenu.value = openSubmenu.value === key ? null : key
 }
 
 const isAnySubmenuRouteActive = computed(() => {
-  return menuGroups.some((group) =>
+  return menuGroups.value.some((group) =>
     group.items.some(
       (item) => item.subItems && item.subItems.some((subItem) => isActive(subItem.path)),
     ),
   )
 })
 
-const isSubmenuOpen = (groupIndex, itemIndex) => {
+const isSubmenuOpen = (groupIndex: number, itemIndex: number) => {
   const key = `${groupIndex}-${itemIndex}`
+  const subItems = menuGroups.value[groupIndex]?.items[itemIndex]?.subItems
   return (
     openSubmenu.value === key ||
     (isAnySubmenuRouteActive.value &&
-      menuGroups[groupIndex].items[itemIndex].subItems?.some((subItem) => isActive(subItem.path)))
+      subItems &&
+      subItems.some((subItem) => isActive(subItem.path)))
   )
-}
-
-const startTransition = (el) => {
-  el.style.height = 'auto'
-  const height = el.scrollHeight
-  el.style.height = '0px'
-  // el.offsetHeight // force reflow
-  el.style.height = height + 'px'
-}
-
-const endTransition = (el) => {
-  el.style.height = ''
 }
 </script>

@@ -1,5 +1,4 @@
-﻿// src/types/api.types.ts
-export interface ApiResponse<T> {
+﻿export interface ApiResponse<T> {
   data: T
   message?: string
   status: number

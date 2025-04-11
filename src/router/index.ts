@@ -6,7 +6,7 @@ import chartRoutes from './chart/chart.router'
 import uiRoutes from './uiElement/ui.router'
 import miscRoutes from './misc/misc.router'
 import authRouter from './auth/auth.router'
-import { useAuthStore } from '@/store/auth.store'
+import { useAuthStore } from '@/store/auth.stores'
 import { storeToRefs } from 'pinia'
 
 const router = createRouter({

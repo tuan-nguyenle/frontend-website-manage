@@ -1,13 +1,20 @@
-﻿import Ecommerce from '@/views/Ecommerce.vue'
+﻿import DashboardView from '@/views/DashboardView.vue'
+import EcommerceView from '@/views/EcommerceView.vue'
 import Calendar from '@/views/Others/Calendar.vue'
 import UserProfile from '@/views/Others/UserProfile.vue'
 
 export default [
   {
     path: '/',
-    name: 'Dashboard',
-    component: Ecommerce,
-    meta: { title: 'eCommerce Dashboard' },
+    name: 'DashboardView',
+    component: DashboardView,
+    meta: { title: 'eCommerce' },
+  },
+  {
+    path: '/ecommerce',
+    name: 'EcommerceView',
+    component: EcommerceView,
+    meta: { title: 'Dashboard' },
   },
   {
     path: '/calendar',

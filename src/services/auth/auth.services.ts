@@ -1,6 +1,6 @@
-﻿import { apiService } from '@/services/api.services' // Axios-based service
-import { useAuthStore } from '@/store/auth.store' // Pinia store
-import type { AuthResponse, User } from '@/types/auth.types' // User type definition
+﻿import type { AuthResponse, User } from '@/types'
+import { apiService } from '@/services'
+import { useAuthStore } from '@/store'
 
 class AuthService {
   /**
@@ -55,10 +55,17 @@ class AuthService {
   /**
    * Logs out the user, clearing tokens and user data.
    */
-  async logout(): Promise<void> {
-    await apiService.post('/logout', {}) // Notify backend (optional)
-    const authStore = useAuthStore()
-    authStore.clearAuth()
+  logout(): Promise<void> {
+    return apiService
+      .post('/logout', {})
+      .then(() => {
+        this.clearToken()
+      })
+      .catch((error) => {
+        console.error('Logout request failed:', error)
+        this.clearToken()
+        window.location.href = '/signin'
+      })
   }
 
   /**
@@ -68,6 +75,11 @@ class AuthService {
   getToken(): string | null {
     const authStore = useAuthStore()
     return authStore.auth?.accessToken ?? null
+  }
+
+  clearToken(): void {
+    const authStore = useAuthStore()
+    authStore.clearAuth()
   }
 }
 

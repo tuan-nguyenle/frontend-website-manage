@@ -9,7 +9,8 @@ export interface User {
   name: User
   email: string
   username: string
-  // roles?: string[]
+  roles: [id: string, role_name: string]
+  image_path: string
 }
 
 export interface AuthResponse {
