@@ -64,8 +64,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import router from '@/router'
 import type { User } from '@/types'
 import { useAuthStore } from '@/store'
+import { authService } from '@/services'
 
-const authStore = useAuthStore()
 const user = useAuthStore().user as User | null
 
 const avatarLink = ref(import.meta.env.VITE_API_IMAGE_URL + user?.image_path)
@@ -89,7 +89,7 @@ const closeDropdown = () => {
 
 const signOut = async () => {
   try {
-    authStore.clearAuth() // Clear authentication state
+    authService.signOut()
     closeDropdown() // Close dropdown before navigation
     await router.push('/signin') // Navigate to sign-in page
   } catch (error) {

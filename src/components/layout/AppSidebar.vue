@@ -40,7 +40,19 @@
     <div class="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
       <nav class="mb-6">
         <div class="flex flex-col gap-4">
-          <div v-for="(menuGroup, groupIndex) in menuGroups" :key="groupIndex">
+          <div v-if="menuStore.isLoading">
+            <div v-for="n in 3" :key="n" class="animate-pulse">
+              <div class="mb-4 h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div class="flex flex-col gap-4">
+                <div
+                  v-for="i in 3"
+                  :key="i"
+                  class="h-10 w-full bg-gray-200 dark:bg-gray-700 rounded"
+                ></div>
+              </div>
+            </div>
+          </div>
+          <div v-else v-for="(menuGroup, groupIndex) in mappedMenuGroups" :key="groupIndex">
             <h2
               :class="[
                 'mb-4 text-xs uppercase flex leading-[20px] text-gray-400',
@@ -56,7 +68,7 @@
               <li v-for="(item, index) in menuGroup.items" :key="item.name">
                 <!-- Menu Item with Submenu -->
                 <button
-                  v-if="item.subItems"
+                  v-if="item.subItems && item.subItems.length"
                   @click="toggleSubmenu(groupIndex, index)"
                   :class="[
                     'menu-item group w-full',
@@ -68,13 +80,15 @@
                   ]"
                 >
                   <span
+                    v-if="item.icon"
                     :class="[
                       isSubmenuOpen(groupIndex, index)
                         ? 'menu-item-icon-active'
                         : 'menu-item-icon-inactive',
                     ]"
                   >
-                    <component :is="item.icon" />
+                    <component :is="item.icon" v-if="item.icon" />
+                    <span v-else class="w-5 h-5 bg-gray-200 rounded"></span>
                   </span>
                   <span v-if="isExpanded || isHovered || isMobileOpen" class="menu-item-text">{{
                     item.name
@@ -103,13 +117,15 @@
                   ]"
                 >
                   <span
+                    v-if="item.icon"
                     :class="[
                       isActive(item.path) ? 'menu-item-icon-active' : 'menu-item-icon-inactive',
                     ]"
                   >
-                    <component :is="item.icon" />
+                    <component :is="item.icon" v-if="item.icon" />
+                    <span v-else class="w-5 h-5 bg-gray-200 rounded"></span>
                   </span>
-                  <span v-if="isExpanded || isHovered || isMobileOpen" class="menu-item-text">{{
+                  <span v-if="iconMap || isHovered || isMobileOpen" class="menu-item-text">{{
                     item.name
                   }}</span>
                 </router-link>
@@ -152,10 +168,19 @@
 </template>
 
 <script lang="ts" setup>
-// import BoxCubeIcon from '@/icons/BoxCubeIcon.vue'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, type Component } from 'vue'
 import { useRoute } from 'vue-router'
-import { ChevronDownIcon, HorizontalDots } from '@/icons'
+import {
+  ChevronDownIcon,
+  HorizontalDots,
+  GridIcon,
+  CalenderIcon,
+  UserCircleIcon,
+  ListIcon,
+  TableIcon,
+  PageIcon,
+  SettingsIcon,
+} from '@/icons'
 import SidebarWidget from './SidebarWidget.vue'
 import { useSidebar } from '@/composables/useSidebar'
 import { useMenuStore } from '@/store'
@@ -164,37 +189,48 @@ const menuStore = useMenuStore()
 const route = useRoute()
 const { isExpanded, isMobileOpen, isHovered, openSubmenu } = useSidebar()
 
-// Define menuGroups as a computed property
-const menuGroups = computed(() => menuStore.menuGroups)
+const iconMap: Record<string, Component> = {
+  GridIcon,
+  CalenderIcon,
+  UserCircleIcon,
+  ListIcon,
+  TableIcon,
+  PageIcon,
+  SettingsIcon,
+}
 
-// Fetch menu on mount
-onMounted(() => {
-  menuStore.fetchMenu()
+const mappedMenuGroups = computed(() => {
+  return menuStore.menuGroups.map((group) => ({
+    ...group,
+    items: group.items.map((item) => {
+      return {
+        ...item,
+        icon: iconMap[item.icon as string],
+      }
+    }),
+  }))
 })
 
+// Fetch menu on mount
+onMounted(async () => {
+  await menuStore.fetchMenu()
+})
+
+// Check if a route is active
 const isActive = (path: string) => route.path === path
 
-const toggleSubmenu = (groupIndex: unknown, itemIndex: unknown) => {
+// Toggle submenu
+const toggleSubmenu = (groupIndex: number, itemIndex: number) => {
   const key = `${groupIndex}-${itemIndex}`
   openSubmenu.value = openSubmenu.value === key ? null : key
 }
 
-const isAnySubmenuRouteActive = computed(() => {
-  return menuGroups.value.some((group) =>
-    group.items.some(
-      (item) => item.subItems && item.subItems.some((subItem) => isActive(subItem.path)),
-    ),
-  )
-})
-
+// Check if submenu is open
 const isSubmenuOpen = (groupIndex: number, itemIndex: number) => {
   const key = `${groupIndex}-${itemIndex}`
-  const subItems = menuGroups.value[groupIndex]?.items[itemIndex]?.subItems
+  const subItems = mappedMenuGroups.value[groupIndex]?.items[itemIndex]?.subItems
   return (
-    openSubmenu.value === key ||
-    (isAnySubmenuRouteActive.value &&
-      subItems &&
-      subItems.some((subItem) => isActive(subItem.path)))
+    openSubmenu.value === key || (subItems && subItems.some((subItem) => isActive(subItem.path)))
   )
 }
 </script>

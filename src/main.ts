@@ -11,10 +11,13 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import VueApexCharts from 'vue3-apexcharts'
+import ECharts from 'vue-echarts'
+import 'echarts'
 
 const pinia = createPinia()
 const app = createApp(App)
 
+app.component('v-chart', ECharts)
 app.use(router)
 app.use(pinia)
 app.use(VueApexCharts)

@@ -1,6 +1,38 @@
+﻿<script setup lang="ts">
+import { defineProps, defineEmits } from 'vue'
+
+defineProps<{
+  activeSubTab: string
+}>()
+
+const emit = defineEmits<{
+  (e: 'set-sub-tab', subTab: string): void
+  (e: 'update-search', query: string): void
+  (e: 'add-user'): void
+}>()
+
+const subTabs = ['General', 'Tags', 'Permissions']
+</script>
+
 <template>
-  <div class="hidden lg:block">
-    <form>
+  <div class="flex items-center justify-between mb-4">
+    <!-- Sub-tabs -->
+    <div class="flex space-x-2">
+      <button
+        v-for="subTab in subTabs"
+        :key="subTab"
+        @click="emit('set-sub-tab', subTab)"
+        class="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+        :class="{
+          'bg-blue-500 text-white': activeSubTab === subTab,
+          'bg-gray-200 text-gray-700 hover:bg-gray-300': activeSubTab !== subTab,
+        }"
+      >
+        {{ subTab }}
+      </button>
+    </div>
+    <!-- Search Input and Add User Button -->
+    <div class="flex items-center space-x-2">
       <div class="relative">
         <button class="absolute -translate-y-1/2 left-4 top-1/2">
           <svg
@@ -23,6 +55,7 @@
           type="text"
           placeholder="Search or type command..."
           class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 pl-12 pr-14 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 xl:w-[430px]"
+          @input="emit('update-search', ($event.target as HTMLInputElement).value)"
         />
 
         <button
@@ -32,6 +65,12 @@
           <span> K </span>
         </button>
       </div>
-    </form>
+      <button
+        @click="emit('add-user')"
+        class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700 transition-colors duration-200"
+      >
+        Add User
+      </button>
+    </div>
   </div>
 </template>

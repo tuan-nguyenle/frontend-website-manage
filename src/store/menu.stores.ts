@@ -1,55 +1,37 @@
-﻿import {
-  CalenderIcon,
-  GridIcon,
-  UserCircleIcon,
-  ListIcon,
-  TableIcon,
-  PageIcon,
-  ChatIcon,
-  MailIcon,
-  DocsIcon,
-  PieChartIcon,
-} from '@/icons'
-import { menuService } from '@/services'
-import type { MenuGroup, MenuItem } from '@/types'
+﻿import { menuService } from '@/services'
+import type { MenuGroup } from '@/types'
 import { defineStore } from 'pinia'
-import { markRaw, type Component } from 'vue'
-
-const iconMap: Record<string, Component> = {
-  GridIcon: markRaw(GridIcon),
-  CalenderIcon: markRaw(CalenderIcon),
-  UserCircleIcon: markRaw(UserCircleIcon),
-  ListIcon: markRaw(ListIcon),
-  TableIcon: markRaw(TableIcon),
-  PageIcon: markRaw(PageIcon),
-  ChatIcon: markRaw(ChatIcon),
-  MailIcon: markRaw(MailIcon),
-  DocsIcon: markRaw(DocsIcon),
-  PieChartIcon: markRaw(PieChartIcon),
-}
 
 export const useMenuStore = defineStore('menu', {
   state: () => ({
     menuGroups: [] as MenuGroup[],
+    isLoading: false,
   }),
 
   actions: {
     async fetchMenu(): Promise<void> {
+      this.isLoading = true
       try {
-        const response = await menuService.getMenu()
-        this.menuGroups = response.map((group) => ({
-          title: group.title,
-          items: group.items.map((item: MenuItem) => ({
-            name: item.name,
-            icon: iconMap[item.icon as string] || null,
-            path: item.path,
-            subItems: item.subItems,
-          })),
-        }))
+        const menuStorage = localStorage.getItem('menuGroups')
+        if (menuStorage) {
+          this.menuGroups = JSON.parse(menuStorage)
+          this.isLoading = false
+          return
+        }
+        this.menuGroups = await menuService.getMenu()
+        localStorage.setItem('menuGroups', JSON.stringify(this.menuGroups))
       } catch (error) {
         console.error('Error fetching menu:', error)
         throw error
+      } finally {
+        this.isLoading = false
       }
+    },
+
+    clearMenu(): void {
+      this.menuGroups = []
+      localStorage.removeItem('menuGroups')
+      console.log('menuGroups cleared from state and localStorage')
     },
   },
 })

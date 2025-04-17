@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
 import dashboardRoutes from './dashboard/dashboard.router'
 import formRoutes from './form/form.router'
 import tableRoutes from './table/table.router'
@@ -6,6 +7,8 @@ import chartRoutes from './chart/chart.router'
 import uiRoutes from './uiElement/ui.router'
 import miscRoutes from './misc/misc.router'
 import authRouter from './auth/auth.router'
+import settingRouter from './settings/setting.router'
+
 import { useAuthStore } from '@/store/auth.stores'
 import { storeToRefs } from 'pinia'
 
@@ -15,6 +18,7 @@ const router = createRouter({
     return savedPosition || { left: 0, top: 0 }
   },
   routes: [
+    ...settingRouter,
     ...authRouter,
     ...dashboardRoutes,
     ...formRoutes,

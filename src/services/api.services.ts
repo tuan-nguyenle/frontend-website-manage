@@ -37,33 +37,14 @@ class ApiService {
 
     this.api.interceptors.response.use(
       (response: AxiosResponse) => response,
-      async (error) => {
-        const originalRequest = error.config
-
-        // Handle token expiration (401 errors)
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true
-
-          try {
-            // Attempt to refresh token
-            await authService.refreshToken()
-
-            // Retry the original request with new token
-            const token = authService.getToken()
-            this.api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-            return this.api(originalRequest)
-          } catch (refreshError) {
-            // If refresh fails, log out the user
-            authService.clearToken()
-            authService.logout()
-            // window.location.href = '/login'
-            return Promise.reject(refreshError)
-          }
+      (error) => {
+        if (error.response?.status === 401) {
+          authService.clearToken()
+          authService.logout()
+          return Promise.reject(error)
         }
 
-        // Transform error to consistent format
         const apiError: ApiError = {
-          // message: error.response?.data?.message || 'An unknown error occurred',
           status: error.response?.status || 500,
           errors: error.response?.data?.error,
         }

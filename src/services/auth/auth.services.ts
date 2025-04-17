@@ -55,17 +55,15 @@ class AuthService {
   /**
    * Logs out the user, clearing tokens and user data.
    */
-  logout(): Promise<void> {
-    return apiService
-      .post('/logout', {})
-      .then(() => {
-        this.clearToken()
-      })
-      .catch((error) => {
-        console.error('Logout request failed:', error)
-        this.clearToken()
-        window.location.href = '/signin'
-      })
+  async signOut(): Promise<void> {
+    try {
+      await apiService.post('/logout', {})
+    } catch (error) {
+      console.error('Logout request failed:', error)
+    } finally {
+      localStorage.clear()
+      window.location.href = '/signin' // Fallback redirect
+    }
   }
 
   /**
@@ -73,13 +71,11 @@ class AuthService {
    * @returns The access token or null if not authenticated
    */
   getToken(): string | null {
-    const authStore = useAuthStore()
-    return authStore.auth?.accessToken ?? null
+    return useAuthStore().auth?.accessToken ?? null
   }
 
-  clearToken(): void {
-    const authStore = useAuthStore()
-    authStore.clearAuth()
+  clearStorage(): void {
+    useAuthStore().clearAuth()
   }
 }
 

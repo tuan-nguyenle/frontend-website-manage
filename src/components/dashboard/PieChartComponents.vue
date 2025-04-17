@@ -1,111 +1,93 @@
 ﻿<template>
   <div>
-    <h2 class="text-lg font-bold mb-2">Top Selling Products (2023)</h2>
-    <apexchart
-      type="pie"
-      :options="chartOptions"
-      :series="activeSeries"
-      @legend-click="toggleSegment"
-    />
+    <h2 class="text-lg font-semibold text-gray-800 dark:text-white/90">
+      Top Selling Products (2023)
+    </h2>
+    <div ref="chartContainer" style="height: 300px; width: 100%">
+      <v-chart :option="option" autoresize />
+    </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import VueApexCharts from 'vue3-apexcharts'
-import { computed, ref } from 'vue'
+<script lang="ts" setup>
+import type { EChartsOption } from 'echarts'
+import { ref, computed, onMounted } from 'vue'
 
-// Constants
-const LABELS = ['Earphones', 'Laptop', 'Smartphone', 'Camera', 'Tablet', 'Television']
-const COLORS = ['#A6C8FF', '#9AE6B4', '#FBD38D', '#F6AD55', '#D6BCFA', '#FFB6B9', '#BEE3F8']
-const DEFAULT_SERIES = [20, 25, 30, 15, 10, 5]
+const chartContainer = ref<HTMLElement | null>(null)
+const isMounted = ref(false)
+const isDarkMode = ref(document.documentElement.classList.contains('dark'))
 
-// Reactive state
-const hiddenSegments = ref<number[]>([])
-
-// Base chart options
-const baseOptions = {
-  chart: {
-    type: 'pie',
+// Dynamically set chart options based on dark mode
+const option = computed<EChartsOption>(() => ({
+  textStyle: {
+    fontFamily: 'Inter, "Helvetica Neue", Arial, sans-serif',
+    color: isDarkMode.value ? '#E5E7EB' : '#1F2937', // Gray-200 for dark, Gray-800 for light
   },
-  labels: LABELS,
-  colors: COLORS,
-  legend: { position: 'right' },
+  title: {
+    text: 'Traffic Sources',
+    left: 'center',
+    textStyle: {
+      color: isDarkMode.value ? '#F3F4F6' : '#111827', // Gray-100 for dark, Gray-900 for light
+    },
+  },
   tooltip: {
-    style: {
-      fontSize: '14px',
-      fontFamily: 'Arial, sans-serif',
+    trigger: 'item',
+    formatter: '{a} <br/>{b} : {c} ({d}%)',
+    backgroundColor: isDarkMode.value ? '#1F2937' : '#FFFFFF', // Gray-800 for dark, White for light
+    textStyle: {
+      color: isDarkMode.value ? '#E5E7EB' : '#1F2937', // Gray-200 for dark, Gray-800 for light
     },
-    custom: ({
-      series,
-      seriesIndex,
-      w,
-    }: {
-      series: number[]
-      seriesIndex: number
-      w: { config: { labels: string[]; colors: string[] } }
-    }) => `
-      <div style="background: #fff; padding: 10px; color: #333; font-family: Arial, sans-serif;">
-        <span style="display: inline-block; width: 12px; height: 12px; background: ${w.config.colors[seriesIndex]}; border-radius: 50%; margin-right: 8px;"></span>
-        <strong>${w.config.labels[seriesIndex]}</strong>: ${series[seriesIndex]} Product
-      </div>
-    `,
-  },
-}
-
-// Computed properties
-const activeSeries = computed(() =>
-  DEFAULT_SERIES.map((value, index) => (hiddenSegments.value.includes(index) ? 0 : value)),
-)
-
-const chartOptions = computed(() => ({
-  ...baseOptions,
-  states: {
-    active: {
-      filter: {
-        type: 'none', // Prevents color fade
-      },
-    },
+    borderColor: isDarkMode.value ? '#4B5563' : '#D1D5DB', // Gray-600 for dark, Gray-300 for light
   },
   legend: {
-    /**
-     * Formats the legend label based on whether the series is hidden.
-     *
-     * - If the series index exists in `hiddenSegments`, the label is styled with a gray color (`#9CA3AF`) to indicate it's hidden.
-     * - Otherwise, the label is displayed normally.
-     *
-     * @param {string} seriesName - The name of the series.
-     * @param {{ seriesIndex: number }} context - Context object containing the index of the series.
-     * @returns {string} - The formatted HTML string or plain series name.
-     */
-
-    formatter: (seriesName: string, { seriesIndex }: { seriesIndex: number }) =>
-      hiddenSegments.value.includes(seriesIndex)
-        ? `<span style="color: #9CA3AF">${seriesName}</span>`
-        : seriesName,
+    orient: 'vertical',
+    left: 'right',
+    data: ['Direct', 'Email', 'Ad Networks', 'Video Ads', 'Search Engines'],
+    textStyle: {
+      color: isDarkMode.value ? '#D1D5DB' : '#374151', // Gray-300 for dark, Gray-700 for light
+    },
   },
+  series: [
+    {
+      name: 'Traffic Sources',
+      type: 'pie',
+      radius: '55%',
+      center: ['50%', '60%'],
+      data: [
+        { value: 335, name: 'Direct' },
+        { value: 310, name: 'Email' },
+        { value: 234, name: 'Ad Networks' },
+        { value: 135, name: 'Video Ads' },
+        { value: 458, name: 'Search Engines' },
+      ],
+      itemStyle: {
+        borderColor: isDarkMode.value ? '#1F2937' : '#FFFFFF', // Gray-800 for dark, White for light
+        borderWidth: 1,
+      },
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 10,
+          shadowOffsetX: 0,
+          shadowColor: isDarkMode.value ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.5)',
+        },
+      },
+    },
+  ],
 }))
 
-/**
- * Toggles the visibility of a chart series by updating the `hiddenSegments` array.
- *
- * - If the given `seriesIndex` is already in `hiddenSegments`, it will be removed (making the series visible).
- * - If not, it will be added (hiding the series).
- *
- * This is typically used in conjunction with the legend to show or hide specific series on click.
- *
- * @param {ApexCharts} chart - The ApexCharts instance.
- * @param {number} seriesIndex - Index of the series to toggle.
- */
+// Watch for changes to dark mode
+const observer = new MutationObserver(() => {
+  isDarkMode.value = document.documentElement.classList.contains('dark')
+})
+observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
 
-const toggleSegment = (chart: ApexCharts, seriesIndex: number) => {
-  const isHidden = hiddenSegments.value.includes(seriesIndex)
-
-  hiddenSegments.value = isHidden
-    ? hiddenSegments.value.filter((i) => i !== seriesIndex)
-    : [...hiddenSegments.value, seriesIndex]
-}
-
-defineOptions({
-  components: { apexchart: VueApexCharts },
+onMounted(() => {
+  if (
+    chartContainer.value &&
+    chartContainer.value.clientWidth > 0 &&
+    chartContainer.value.clientHeight > 0
+  ) {
+    isMounted.value = true
+  }
 })
 </script>

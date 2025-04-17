@@ -1,10 +1,12 @@
-﻿export interface MenuGroup {
+﻿import type { Component } from 'vue'
+
+export interface MenuGroup {
   title: string
   items: MenuItem[]
 }
 
 export interface MenuItem {
-  icon: unknown
+  icon: string | Component
   name: string
   path: string
   subItems: SubItem[]
