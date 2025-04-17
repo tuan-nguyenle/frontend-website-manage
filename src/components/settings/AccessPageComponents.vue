@@ -1,84 +1,115 @@
 ﻿<script setup lang="ts">
 import { ref } from 'vue'
-import Subheader from './components/SubHeaderComponents.vue'
-import UserTable from './components/UserTableComponents.vue'
+import SubHeaderComponents from './components/SubHeaderComponents.vue'
+import PermissionTableComponents from './components/PermissionTableComponents.vue'
 
 // Define types
-type PermissionState = 'on' | 'off'
-
-interface User {
+interface PermissionNode {
   name: string
-  avatar: string
-  status: string
-  permissions: Record<string, PermissionState>
+  children?: PermissionNode[]
 }
 
-// Sample user data
-const users = ref<User[]>([
+interface Role {
+  role_name: string
+  permissions: Record<string, Record<string, boolean>>
+}
+
+// Define the permission tree based on the image
+const permissionTree: PermissionNode[] = [
+  { name: 'Orders', children: [{ name: 'Dispatch' }] },
   {
-    name: 'leilacolle',
-    avatar: 'placeholder.png',
-    status: 'Online',
-    permissions: {
-      'Manage workspace settings': 'on',
-      'Manage workspace billing': 'on',
-      'Manage workspace integration settings': 'on',
-      'Manage workspace users': 'on',
-      'Manage workspace permissions': 'on',
-    },
+    name: 'Purchase orders',
+    children: [
+      { name: 'Purchase Order Details' },
+      { name: 'Purchase Order Notes' },
+      { name: 'Purchase Order Documents' },
+      { name: 'Purchase Order Delivery Summary' },
+      { name: 'Authorize Purchase Order' },
+      { name: 'Allow Budget Check Override' },
+      { name: 'Credit Note' },
+      { name: 'Invoice' },
+    ],
   },
+]
+
+// Define actions based on the image
+const actions = ['View', 'Create', 'Modify', 'Cancel', 'Delete']
+
+// Sample role data
+const roles = ref<Role[]>([
   {
-    name: 'aiden',
-    avatar: 'placeholder.png',
-    status: 'Last online 3m ago',
+    role_name: 'Distributor',
     permissions: {
-      'Manage workspace settings': 'on',
-      'Manage workspace billing': 'on',
-      'Manage workspace integration settings': 'on',
-      'Manage workspace users': 'on',
-      'Manage workspace permissions': 'on',
-    },
-  },
-  {
-    name: 'johnny.b',
-    avatar: 'placeholder.png',
-    status: 'Online',
-    permissions: {
-      'Manage workspace settings': 'on',
-      'Manage workspace billing': 'on',
-      'Manage workspace integration settings': 'off',
-      'Manage workspace users': 'on',
-      'Manage workspace permissions': 'on',
+      Orders: { View: true, Create: false, Modify: false, Cancel: false, Delete: false },
+      'Orders.Dispatch': { View: true, Create: false, Modify: false, Cancel: false, Delete: false },
+      'Purchase orders': { View: true, Create: true, Modify: true, Cancel: true, Delete: true },
+      'Purchase orders.Purchase Order Details': {
+        View: true,
+        Create: true,
+        Modify: true,
+        Cancel: false,
+        Delete: false,
+      },
+      'Purchase orders.Purchase Order Notes': {
+        View: true,
+        Create: false,
+        Modify: true,
+        Cancel: false,
+        Delete: false,
+      },
+      'Purchase orders.Purchase Order Documents': {
+        View: true,
+        Create: false,
+        Modify: false,
+        Cancel: false,
+        Delete: false,
+      },
+      'Purchase orders.Purchase Order Delivery Summary': {
+        View: true,
+        Create: true,
+        Modify: true,
+        Cancel: false,
+        Delete: true,
+      },
+      'Authorize Purchase Order': {
+        View: true,
+        Create: false,
+        Modify: true,
+        Cancel: false,
+        Delete: false,
+      },
+      'Allow Budget Check Override': {
+        View: false,
+        Create: false,
+        Modify: false,
+        Cancel: false,
+        Delete: false,
+      },
+      'Credit Note': { View: true, Create: true, Modify: true, Cancel: true, Delete: true },
+      Invoice: { View: true, Create: false, Modify: false, Cancel: false, Delete: false },
     },
   },
 ])
 
+const selectedRole = ref(roles.value[0])
+
 const activeSubTab = ref<string>('Permissions')
-const searchQuery = ref<string>('') // New state for search input
-
-const permissions = [
-  'Manage workspace settings',
-  'Manage workspace billing',
-  'Manage workspace integration settings',
-  'Manage workspace users',
-  'Manage workspace permissions',
-]
-
-// Filter users based on tab and search query
-const filteredUsers = () => {
-  return users.value.filter((user) =>
-    user.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
-  )
-}
-
-// Toggle permission logic
-const togglePermission = (user: User, permission: string) => {
-  user.permissions[permission] = user.permissions[permission] === 'on' ? 'off' : 'on'
-}
+const searchQuery = ref<string>('')
 
 // Placeholder for Add User functionality
 const addUser = () => {
-  alert('Add User functionality to be implemented.')
+  alert('Add Role functionality to be implemented.')
+}
+
+// Toggle permission logic
+const togglePermission = (path: string, action: string) => {
+  if (!selectedRole.value.permissions[path]) {
+    selectedRole.value.permissions[path] = {}
+    actions.forEach((act) => {
+      selectedRole.value.permissions[path][act] = false
+    })
+  }
+  selectedRole.value.permissions[path][action] = !selectedRole.value.permissions[path][action]
 }
 </script>
 
@@ -86,15 +117,17 @@ const addUser = () => {
   <div
     class="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12"
   >
-    <Subheader
+    <SubHeaderComponents
       :active-sub-tab="activeSubTab"
       @set-sub-tab="(subTab) => (activeSubTab = subTab)"
       @update-search="(query: string) => (searchQuery = query)"
       @add-user="addUser"
     />
-    <UserTable
-      :users="filteredUsers()"
-      :permissions="permissions"
+    <PermissionTableComponents
+      v-if="activeSubTab === 'Permissions'"
+      :permission-tree="permissionTree"
+      :role-permissions="selectedRole.permissions"
+      :actions="actions"
       @toggle-permission="togglePermission"
     />
   </div>
