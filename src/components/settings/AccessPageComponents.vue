@@ -1,115 +1,70 @@
 ﻿<script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { apiService } from '@/services/api.services'
 import SubHeaderComponents from './components/SubHeaderComponents.vue'
 import PermissionTableComponents from './components/PermissionTableComponents.vue'
 
-// Define types
-interface PermissionNode {
-  name: string
-  children?: PermissionNode[]
-}
-
 interface Role {
+  id: number
   role_name: string
-  permissions: Record<string, Record<string, boolean>>
+  pages: { page_id: number; page_name: string; permissions: string[] }[]
 }
 
-// Define the permission tree based on the image
-const permissionTree: PermissionNode[] = [
-  { name: 'Orders', children: [{ name: 'Dispatch' }] },
-  {
-    name: 'Purchase orders',
-    children: [
-      { name: 'Purchase Order Details' },
-      { name: 'Purchase Order Notes' },
-      { name: 'Purchase Order Documents' },
-      { name: 'Purchase Order Delivery Summary' },
-      { name: 'Authorize Purchase Order' },
-      { name: 'Allow Budget Check Override' },
-      { name: 'Credit Note' },
-      { name: 'Invoice' },
-    ],
-  },
-]
+interface PermissionNode {
+  id: number
+  name: string
+  children: PermissionNode[]
+}
 
-// Define actions based on the image
-const actions = ['View', 'Create', 'Modify', 'Cancel', 'Delete']
-
-// Sample role data
-const roles = ref<Role[]>([
-  {
-    role_name: 'Distributor',
-    permissions: {
-      Orders: { View: true, Create: false, Modify: false, Cancel: false, Delete: false },
-      'Orders.Dispatch': { View: true, Create: false, Modify: false, Cancel: false, Delete: false },
-      'Purchase orders': { View: true, Create: true, Modify: true, Cancel: true, Delete: true },
-      'Purchase orders.Purchase Order Details': {
-        View: true,
-        Create: true,
-        Modify: true,
-        Cancel: false,
-        Delete: false,
-      },
-      'Purchase orders.Purchase Order Notes': {
-        View: true,
-        Create: false,
-        Modify: true,
-        Cancel: false,
-        Delete: false,
-      },
-      'Purchase orders.Purchase Order Documents': {
-        View: true,
-        Create: false,
-        Modify: false,
-        Cancel: false,
-        Delete: false,
-      },
-      'Purchase orders.Purchase Order Delivery Summary': {
-        View: true,
-        Create: true,
-        Modify: true,
-        Cancel: false,
-        Delete: true,
-      },
-      'Authorize Purchase Order': {
-        View: true,
-        Create: false,
-        Modify: true,
-        Cancel: false,
-        Delete: false,
-      },
-      'Allow Budget Check Override': {
-        View: false,
-        Create: false,
-        Modify: false,
-        Cancel: false,
-        Delete: false,
-      },
-      'Credit Note': { View: true, Create: true, Modify: true, Cancel: true, Delete: true },
-      Invoice: { View: true, Create: false, Modify: false, Cancel: false, Delete: false },
-    },
-  },
-])
-
-const selectedRole = ref(roles.value[0])
-
-const activeSubTab = ref<string>('Permissions')
+// State
+const roles = ref<Role[]>([])
+const pageTree = ref<PermissionNode[]>([])
+const selectedRole = ref<Role | null>(null)
 const searchQuery = ref<string>('')
+const actions = ref<string[]>(['View', 'Edit', 'Delete', 'Import', 'Export', 'Manage'])
 
-// Placeholder for Add User functionality
-const addUser = () => {
-  alert('Add Role functionality to be implemented.')
+onMounted(async () => {
+  try {
+    const response = await apiService.get('/settings')
+    const data = response.data as { roles: Role[]; pageTree: PermissionNode[] }
+    // Ensure each page has a page_name property
+    roles.value = (data.roles || []).map((role) => ({
+      ...role,
+      pages: (role.pages || []).map((page) => ({
+        ...page,
+        page_name: page.page_name || '', // Default to empty string if missing
+      })),
+    }))
+    pageTree.value = data.pageTree || []
+    if (roles.value.length > 0) {
+      selectedRole.value = roles.value[0] // Default to first role
+    }
+  } catch (error) {
+    console.error('Failed to fetch settings:', error)
+  }
+})
+
+const permissionTree = computed(() => pageTree.value)
+
+const selectedRolePermissions = computed(() => {
+  if (!selectedRole.value) return {}
+  const permissionsMap: Record<number, Record<string, boolean>> = {}
+  selectedRole.value.pages.forEach((page) => {
+    const permObj: Record<string, boolean> = {}
+    actions.value.forEach((action) => {
+      permObj[action] = page.permissions.includes(action)
+    })
+    permissionsMap[page.page_id] = permObj
+  })
+  return permissionsMap
+})
+
+const addPermission = () => {
+  alert('Add Permission functionality to be implemented.')
 }
 
-// Toggle permission logic
-const togglePermission = (path: string, action: string) => {
-  if (!selectedRole.value.permissions[path]) {
-    selectedRole.value.permissions[path] = {}
-    actions.forEach((act) => {
-      selectedRole.value.permissions[path][act] = false
-    })
-  }
-  selectedRole.value.permissions[path][action] = !selectedRole.value.permissions[path][action]
+const togglePermission = (pageId: number, action: string) => {
+  console.log(`Toggle permission for page ${pageId}, action ${action}`)
 }
 </script>
 
@@ -118,17 +73,21 @@ const togglePermission = (path: string, action: string) => {
     class="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12"
   >
     <SubHeaderComponents
-      :active-sub-tab="activeSubTab"
-      @set-sub-tab="(subTab) => (activeSubTab = subTab)"
+      :roles="roles"
+      :selected-role="selectedRole"
+      @select-role="(role) => (selectedRole = role)"
       @update-search="(query: string) => (searchQuery = query)"
-      @add-user="addUser"
+      @add-permission="addPermission"
     />
     <PermissionTableComponents
-      v-if="activeSubTab === 'Permissions'"
+      v-if="selectedRole && permissionTree.length > 0"
       :permission-tree="permissionTree"
-      :role-permissions="selectedRole.permissions"
+      :role-permissions="selectedRolePermissions"
       :actions="actions"
       @toggle-permission="togglePermission"
     />
+    <div v-else class="text-center text-gray-500 dark:text-gray-400">
+      {{ roles.length === 0 ? 'No roles available' : 'Loading permissions...' }}
+    </div>
   </div>
 </template>

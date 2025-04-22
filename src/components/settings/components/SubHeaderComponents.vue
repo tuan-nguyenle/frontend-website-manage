@@ -1,74 +1,67 @@
 ﻿<script setup lang="ts">
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, ref, watch } from 'vue'
 
-defineProps<{
-  activeSubTab: string
+interface Role {
+  id: number
+  role_name: string
+  pages: { page_id: number; page_name: string; permissions: string[] }[]
+}
+
+const props = defineProps<{
+  roles: Role[]
+  selectedRole: Role | null
 }>()
 
 const emit = defineEmits<{
-  (e: 'set-sub-tab', subTab: string): void
+  (e: 'select-role', role: Role): void
   (e: 'update-search', query: string): void
-  (e: 'add-user'): void
+  (e: 'add-permission'): void
 }>()
 
-const subTabs = ['Role', 'Permissions']
+const selectedRoleName = ref('')
+watch(
+  () => props.selectedRole,
+  (newRole) => {
+    selectedRoleName.value = newRole ? newRole.role_name : ''
+  },
+  { immediate: true },
+)
+
+watch(selectedRoleName, (newVal) => {
+  const selected = props.roles.find((role) => role.role_name === newVal)
+  if (selected) emit('select-role', selected)
+})
+
+const searchQuery = ref('')
+watch(searchQuery, (newVal) => emit('update-search', newVal))
 </script>
 
 <template>
   <div class="flex items-center justify-between mb-4">
-    <!-- Sub-tabs -->
     <div class="flex space-x-2">
-      <button
-        v-for="subTab in subTabs"
-        :key="subTab"
-        @click="emit('set-sub-tab', subTab)"
-        class="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-        :class="{
-          'bg-blue-500 text-white': activeSubTab === subTab,
-          'bg-gray-200 text-gray-700 hover:bg-gray-300': activeSubTab !== subTab,
-        }"
+      <select
+        v-model="selectedRoleName"
+        class="appearance-none bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 my-2 pr-10 w-48 shadow-theme-xs focus:outline-none focus:ring-2 focus:ring-brand-500/50 dark:focus:ring-brand-800 transition-all duration-200 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600"
+        :disabled="!roles.length"
       >
-        {{ subTab }}
-      </button>
+        <option value="" disabled>No roles available</option>
+        <option v-for="role in roles" :key="role.id" :value="role.role_name">
+          {{ role.role_name }}
+        </option>
+      </select>
     </div>
-    <!-- Search Input and Add User Button -->
     <div class="flex items-center space-x-2">
-      <div class="relative">
-        <button class="absolute -translate-y-1/2 left-4 top-1/2">
-          <svg
-            class="fill-gray-500 dark:fill-gray-400"
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z"
-              fill=""
-            />
-          </svg>
-        </button>
-        <input
-          type="text"
-          placeholder="Search or type command..."
-          class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 pl-12 pr-14 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 xl:w-[430px]"
-          @input="emit('update-search', ($event.target as HTMLInputElement).value)"
-        />
-        <button
-          class="absolute right-2.5 top-1/2 inline-flex -translate-y-1/2 items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 px-[7px] py-[4.5px] text-xs -tracking-[0.2px] text-gray-500 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400"
-        >
-          <span> ⌘ </span>
-          <span> K </span>
-        </button>
-      </div>
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Search or type command..."
+        class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 pl-12 pr-14 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white/90 xl:w-[430px]"
+      />
       <button
-        @click="emit('add-user')"
+        @click="emit('add-permission')"
         class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700 transition-colors duration-200"
       >
-        Add Role
+        Add Permission
       </button>
     </div>
   </div>

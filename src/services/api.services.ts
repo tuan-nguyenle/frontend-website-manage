@@ -39,8 +39,8 @@ class ApiService {
       (response: AxiosResponse) => response,
       (error) => {
         if (error.response?.status === 401) {
-          authService.clearToken()
-          authService.logout()
+          authService.clearStorage()
+          authService.signOut()
           return Promise.reject(error)
         }
 
