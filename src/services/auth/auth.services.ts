@@ -4,12 +4,11 @@ import { useAuthStore } from '@/store'
 
 class AuthService {
   /**
-   * Logs in a user and stores the access and refresh tokens.
+   * Logs in a user and stores the access token.
    * @param username - User's username
    * @param password - User's password
-   * @returns The authenticated user
+   * @returns The authenticated user data including token
    */
-
   async login(username: string, password: string): Promise<AuthResponse> {
     const response = await apiService.post<{
       accessToken: string
@@ -26,8 +25,8 @@ class AuthService {
   }
 
   /**
-   * Refreshes the access token using the refresh token.
-   * Updates the auth store and refresh token if provided.
+   * Refreshes the access token using the current access token.
+   * Updates the auth store with the new access token.
    */
   async refreshToken(): Promise<void> {
     const currentToken = this.getToken()
@@ -36,13 +35,12 @@ class AuthService {
     }
 
     try {
-      const {
-        data: { token },
-      } = await apiService.post<{ token: string }>('/refresh', { accessToken: currentToken })
+      const response = await apiService.post<{ token: string }>('/refreshToken', {})
+
       const authStore = useAuthStore()
 
       authStore.setAuth({
-        accessToken: token,
+        accessToken: response.data.token,
         user: authStore.user as User,
       })
     } catch (error) {
@@ -58,6 +56,7 @@ class AuthService {
   async signOut(): Promise<void> {
     try {
       await apiService.post('/logout', {})
+      this.clearStorage()
     } catch (error) {
       console.error('Logout request failed:', error)
     } finally {

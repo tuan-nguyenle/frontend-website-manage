@@ -7,14 +7,15 @@ import type {
 } from 'axios'
 import type { ApiError, ApiResponse } from '@/types'
 import { authService } from '@/services'
+import router from '@/router'
 
 class ApiService {
   private api: AxiosInstance
   private API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+
   constructor() {
     this.api = axios.create({
-      baseURL: this.API_BASE_URL || 'http:/localhost/8000/api',
-      // withCredentials: true,
+      baseURL: this.API_BASE_URL || 'http://localhost:8000/api',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -37,10 +38,32 @@ class ApiService {
 
     this.api.interceptors.response.use(
       (response: AxiosResponse) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          authService.clearStorage()
-          authService.signOut()
+      async (error) => {
+        const originalRequest = error.config
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          originalRequest.url !== '/refresh'
+        ) {
+          originalRequest._retry = true
+          try {
+            await authService.refreshToken()
+            const token = authService.getToken()
+            if (token) {
+              originalRequest.headers.Authorization = `Bearer ${token}`
+              console.log('Retrying original request with new token')
+              return this.api(originalRequest)
+            }
+          } catch (refreshError) {
+            console.error('Token refresh failed in interceptor:', refreshError)
+            await authService.signOut()
+            router.push('/signin')
+            return Promise.reject(refreshError)
+          }
+        }
+
+        if (error.response?.status === 403) {
+          router.push('/403')
           return Promise.reject(error)
         }
 
@@ -69,7 +92,6 @@ class ApiService {
     config?: AxiosRequestConfig,
   ): Promise<ApiResponse<T>> {
     const response = await this.api.post<T>(url, data, config)
-
     return {
       data: response.data,
       status: response.status,
