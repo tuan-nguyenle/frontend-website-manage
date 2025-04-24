@@ -9,7 +9,7 @@
 import { ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
-import AccessPageComponents from '@/components/settings/AccessPageComponents.vue'
+import AccessPageComponents from '@/components/setting/AccessPageComponents.vue'
 
 const currentPageTitle = ref('Settings')
 </script>
