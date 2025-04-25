@@ -51,9 +51,10 @@ export const useSettingsStore = defineStore('settings', {
 
     async savePermissions() {
       if (!this.selectedRoleId) return
+      const allActions = ['View', 'Edit', 'Delete', 'Manage']
       const permissionsToSave = Object.entries(this.editedPermissions).map(([pageId, perms]) => ({
         page_id: Number(pageId),
-        permission_names: ['View'].filter((action) => perms[action]),
+        permission_names: allActions.filter((action) => perms[action]),
       }))
       try {
         await settingsService.updatePermissions(this.selectedRoleId, permissionsToSave)
@@ -67,9 +68,13 @@ export const useSettingsStore = defineStore('settings', {
     },
 
     mapPermissions(role: Role): Record<number, Record<string, boolean>> {
+      const allActions = ['View', 'Edit', 'Delete', 'Manage']
       return role.pages.reduce(
         (acc, page) => {
-          acc[page.page_id] = { View: page.permissions.includes('View') }
+          acc[page.page_id] = {}
+          allActions.forEach((action) => {
+            acc[page.page_id][action] = page.permissions.includes(action)
+          })
           return acc
         },
         {} as Record<number, Record<string, boolean>>,

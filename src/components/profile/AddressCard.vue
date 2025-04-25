@@ -3,16 +3,22 @@
     <div class="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
       <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">Address</h4>
+          <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
+            {{ $t('Address') }}
+          </h4>
 
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
             <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Country</p>
+              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                {{ $t('Country') }}
+              </p>
               <p class="text-sm font-medium text-gray-800 dark:text-white/90">United States</p>
             </div>
 
             <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">City/State</p>
+              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                {{ $t('City') + '/' + $t('State') }}
+              </p>
               <p class="text-sm font-medium text-gray-800 dark:text-white/90">
                 Phoenix, United States
               </p>
@@ -20,7 +26,7 @@
 
             <div>
               <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Postal Code
+                {{ $t('Postal Code') }}
               </p>
               <p class="text-sm font-medium text-gray-800 dark:text-white/90">ERT 2489</p>
             </div>
@@ -51,7 +57,7 @@
               fill=""
             />
           </svg>
-          Edit
+          {{ $t('Edit') }}
         </button>
       </div>
     </div>
@@ -160,7 +166,7 @@
   </div>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { ref } from 'vue'
 import Modal from './Modal.vue'
 

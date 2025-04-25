@@ -116,7 +116,7 @@
               fill=""
             />
           </svg>
-          Edit
+          {{ $t('Edit') }}
         </button>
       </div>
     </div>

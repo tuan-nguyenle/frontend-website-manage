@@ -10,8 +10,7 @@ const isLoading = ref(false)
 const isSaving = ref(false)
 
 function onSelectRole(role: Role) {
-  const safeRole = JSON.parse(JSON.stringify(role))
-  settingsStore.selectRole(safeRole)
+  settingsStore.selectRole(role)
 }
 
 // Show overlay while awaiting savePermissions
@@ -19,6 +18,7 @@ async function handleSavePermissions() {
   isSaving.value = true
   try {
     await settingsStore.savePermissions()
+    await settingsStore.fetchSettings()
   } finally {
     isSaving.value = false
   }
@@ -38,11 +38,11 @@ onMounted(async () => {
     <!-- Overlay for saving (blocks the page with animated Saving... text only) -->
     <div
       v-if="isSaving"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-black bg-opacity-30"
       style="backdrop-filter: blur(2px)"
     >
       <div class="flex flex-col items-center">
-        <p class="text-lg text-white drop-shadow font-semibold saving-anim">Saving</p>
+        <p class="text-gray-500 dark:text-gray-400 saving-animation">{{ $t('Saving') }}</p>
       </div>
     </div>
 
@@ -57,28 +57,28 @@ onMounted(async () => {
       <div
         class="w-5 h-5 mr-3 border-2 border-gray-200 dark:border-gray-700 border-t-gray-500 dark:border-t-gray-400 rounded-full animate-spin mr-2"
       ></div>
-      <span class="text-gray-500 dark:text-gray-400">Loading permissions...</span>
+      <span class="text-gray-500 dark:text-gray-400">{{ $t('Loading permissions') }}...</span>
     </div>
     <PermissionTableComponents
       v-else-if="settingsStore.selectedRole && settingsStore.pageTree.length"
       :permission-tree="settingsStore.pageTree"
       :role-permissions="settingsStore.editedPermissions"
-      :actions="['View']"
+      :actions="['View', 'Delete', 'Edit', 'Manage']"
       @toggle-permission="(pageId, action) => settingsStore.togglePermission(pageId, action)"
     />
 
     <div v-else class="text-center text-gray-500 dark:text-gray-400">
       {{
         settingsStore.roles.length === 0
-          ? 'No roles available'
-          : 'Select a role to view permissions'
+          ? $t('No roles available')
+          : $t('Select a role to view permissions')
       }}
     </div>
   </div>
 </template>
 
 <style scoped>
-.saving-anim::after {
+.saving-animation::after {
   content: '';
   display: inline-block;
   width: 1.2em;

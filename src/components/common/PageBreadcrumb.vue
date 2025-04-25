@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
     <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90" x-text="pageTitle">
-      {{ pageTitle }}
+      {{ $t(pageTitle) }}
     </h2>
     <nav>
       <ol class="flex items-center gap-1.5">
@@ -10,7 +10,7 @@
             class="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400"
             to="/"
           >
-            Home
+            {{ $t('Home') }}
             <svg
               class="stroke-current"
               width="17"
@@ -30,7 +30,7 @@
           </router-link>
         </li>
         <li class="text-sm text-gray-800 dark:text-white/90">
-          {{ pageTitle }}
+          {{ $t(pageTitle) }}
         </li>
       </ol>
     </nav>

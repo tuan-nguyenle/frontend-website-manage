@@ -60,7 +60,7 @@
               ]"
             >
               <template v-if="isExpanded || isHovered || isMobileOpen">
-                {{ menuGroup.title }}
+                {{ $t(menuGroup.title) }}
               </template>
               <HorizontalDots v-else />
             </h2>
@@ -91,7 +91,7 @@
                     <span v-else class="w-5 h-5 bg-gray-200 rounded"></span>
                   </span>
                   <span v-if="isExpanded || isHovered || isMobileOpen" class="menu-item-text">{{
-                    item.name
+                    $t(item.name)
                   }}</span>
                   <ChevronDownIcon
                     v-if="isExpanded || isHovered || isMobileOpen"
@@ -126,7 +126,7 @@
                     <span v-else class="w-5 h-5 bg-gray-200 rounded"></span>
                   </span>
                   <span v-if="iconMap || isHovered || isMobileOpen" class="menu-item-text">{{
-                    item.name
+                    $t(item.name)
                   }}</span>
                 </router-link>
 
@@ -149,7 +149,7 @@
                             },
                           ]"
                         >
-                          {{ subItem.name }}
+                          {{ $t(subItem.name) }}
                         </router-link>
                       </li>
                     </ul>

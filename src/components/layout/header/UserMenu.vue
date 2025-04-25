@@ -38,7 +38,7 @@
               :is="item.icon"
               class="text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300"
             />
-            {{ item.text }}
+            {{ $t(item.text) }}
           </router-link>
         </li>
       </ul>
@@ -50,7 +50,7 @@
         <LogoutIcon
           class="text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300"
         />
-        Sign out
+        {{ $t('Sign Out') }}
       </router-link>
     </div>
     <!-- Dropdown End -->
@@ -65,7 +65,6 @@ import router from '@/router'
 import type { User } from '@/types'
 import { useAuthStore } from '@/store'
 import { authService } from '@/services'
-
 const user = useAuthStore().user as User | null
 
 const avatarLink = ref(import.meta.env.VITE_API_IMAGE_URL + user?.image_path)
@@ -75,7 +74,7 @@ const dropdownRef = ref<HTMLInputElement | null>(null)
 
 const menuItems = [
   { href: '/profile', icon: UserCircleIcon, text: 'Edit profile' },
-  { href: '/chat', icon: SettingsIcon, text: 'Account settings' },
+  { href: '/chat', icon: SettingsIcon, text: 'Account Settings' },
   { href: '/profile', icon: InfoCircleIcon, text: 'Support' },
 ]
 

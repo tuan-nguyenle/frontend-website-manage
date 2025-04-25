@@ -1,11 +1,7 @@
 ﻿<script setup lang="ts">
+import type { PermissionNode } from '@/types'
 import { defineProps, defineEmits, ref, computed } from 'vue'
-
-interface PermissionNode {
-  id: number
-  name: string
-  children: PermissionNode[]
-}
+import { watch } from 'vue'
 
 const props = defineProps<{
   permissionTree: PermissionNode[]
@@ -19,6 +15,19 @@ const emit = defineEmits<{
 
 // Track expanded state by page ID
 const expanded = ref<Record<number, boolean>>({})
+
+// Function to recursively set all nodes with children as expanded
+const setExpanded = (nodes: PermissionNode[]) => {
+  nodes.forEach((node) => {
+    if (node.children.length > 0) {
+      expanded.value[node.id] = true
+      setExpanded(node.children)
+    }
+  })
+}
+
+// Initialize the tree to be fully expanded
+setExpanded(props.permissionTree)
 
 // Toggle expanded state for a page
 const toggleExpand = (pageId: number) => {
@@ -43,20 +52,26 @@ const flattenedTree = computed(() => {
   flatten(props.permissionTree)
   return result
 })
+watch(
+  () => props.permissionTree,
+  (newTree) => {
+    setExpanded(newTree)
+  },
+  { immediate: true, deep: true },
+)
 </script>
-
 <template>
   <div class="overflow-hidden rounded-xl border dark:border-gray-700 dark:bg-gray-900">
     <table class="w-full table-fixed">
       <thead class="border dark:border-gray-700 dark:bg-gray-800">
         <tr class="border-b border-gray-300 dark:border-gray-700">
-          <th class="w-3/5 p-4 text-left dark:text-white/90">Permissions</th>
+          <th class="w-3/5 p-4 text-left dark:text-white/90">{{ $t('Permissions') }}</th>
           <th
             v-for="action in actions"
             :key="action"
             class="w-12 p-4 text-center dark:text-white/90"
           >
-            {{ action }}
+            {{ $t(action) }}
           </th>
         </tr>
       </thead>

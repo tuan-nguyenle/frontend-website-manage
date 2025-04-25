@@ -36,7 +36,7 @@
                 <h1
                   class="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md"
                 >
-                  Sign In
+                  {{ $t('Sign In') }}
                 </h1>
                 <!-- <p class="text-sm text-gray-500 dark:text-gray-400">
                   Enter your email and password to sign in!
@@ -116,7 +116,7 @@
                         for="username"
                         class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                       >
-                        Username <span class="text-error-500">*</span>
+                        {{ $t('Username') }} <span class="text-error-500">*</span>
                       </label>
                       <input
                         v-model="username"
@@ -134,7 +134,7 @@
                         for="password"
                         class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                       >
-                        Password <span class="text-error-500">*</span>
+                        {{ $t('Password') }} <span class="text-error-500">*</span>
                       </label>
                       <div class="relative">
                         <input
@@ -185,7 +185,7 @@
                     </div>
                     <!-- Checkbox -->
                     <div class="flex items-center justify-between">
-                      <div>
+                      <!-- <div>
                         <label
                           for="keepLoggedIn"
                           class="flex items-center text-sm font-normal text-gray-700 cursor-pointer select-none dark:text-gray-400"
@@ -226,7 +226,7 @@
                           </div>
                           Keep me logged in
                         </label>
-                      </div>
+                      </div> -->
                       <!-- <router-link
                         to="/reset-password"
                         class="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
@@ -262,7 +262,7 @@
                             ></path>
                           </svg>
                         </span>
-                        {{ isLoading ? 'Signing In...' : 'Sign In' }}
+                        {{ isLoading ? $t('Processing') + '...' : $t('Sign In') }}
                       </button>
                     </div>
                   </div>
@@ -271,12 +271,12 @@
                   <p
                     class="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start"
                   >
-                    Don't have an account?
+                    {{ $t(`Don't have an account?`) }}
                     <router-link
                       to="/signup"
                       class="text-brand-500 hover:text-brand-600 dark:text-brand-400"
-                      >Sign Up</router-link
-                    >
+                      >{{ $t('Sign Up') }}
+                    </router-link>
                   </p>
                 </div>
               </div>
@@ -312,7 +312,7 @@ import router from '@/router'
 
 const username = ref('tuan2512')
 const password = ref('Tuan@2512')
-const keepLoggedIn = ref(false)
+// const keepLoggedIn = ref(false)
 const showPassword = ref(false)
 
 // UI state

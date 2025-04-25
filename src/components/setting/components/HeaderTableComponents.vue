@@ -47,7 +47,7 @@ watch(
           )
         "
       >
-        <option v-if="roles.length === 0" disabled>No roles available</option>
+        <option v-if="roles.length === 0" disabled>{{ $t('No roles available') }}</option>
         <option v-for="role in roles" :key="role.id" :value="role.role_name">
           {{ role.role_name }}
         </option>
@@ -58,7 +58,7 @@ watch(
         @click="emit('save-permissions')"
         class="bg-green-600 text-white px-4 py-2 rounded-md shadow hover:bg-green-700 transition-colors duration-200"
       >
-        Save
+        {{ $t('Save') }}
       </button>
     </div>
   </div>
