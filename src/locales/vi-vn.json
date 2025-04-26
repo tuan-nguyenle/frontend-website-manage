@@ -44,5 +44,6 @@
   "First Name": "Tên",
   "Last Name": "Họ",
   "Email address": "Địa Chỉ Email",
-  "Phone": "Số Điện Thoại"
+  "Phone": "Số Điện Thoại",
+  "Role Management": "Quản lý vai trò"
 }
