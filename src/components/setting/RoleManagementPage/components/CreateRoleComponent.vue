@@ -57,47 +57,85 @@
 
     <!-- Step 2: Permissions -->
     <div v-if="currentStep === 1">
-      <h2 class="text-lg font-semibold mb-4 text-gray-700 dark:text-white">Assign Permissions</h2>
-      <table class="min-w-full text-sm">
-        <thead>
-          <tr>
-            <th class="p-2 text-left text-gray-700 dark:text-white">Module</th>
-            <th
-              v-for="action in actions"
-              :key="action"
-              class="p-2 text-center text-gray-700 dark:text-white"
+      <h2 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white/90">
+        Assign Permissions
+      </h2>
+      <div class="overflow-hidden rounded-xl border dark:border-gray-700 dark:bg-gray-900">
+        <table class="w-full table-fixed">
+          <thead class="border dark:border-gray-700 dark:bg-gray-800">
+            <tr class="border-b border-gray-300 dark:border-gray-700">
+              <th class="w-3/5 p-4 text-left dark:text-white/90">{{ $t('Permissions') }}</th>
+              <th
+                v-for="action in actions"
+                :key="action"
+                class="w-12 p-4 text-center dark:text-white/90"
+              >
+                {{ $t(action) }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="entry in flattenedPermissions"
+              :key="entry.node.id"
+              class="border-b border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-800 cursor-pointer"
+              @click="toggleExpand(entry.node.id)"
             >
-              {{ action }}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="module in modules" :key="module">
-            <td class="p-2 text-gray-700 dark:text-white">{{ module }}</td>
-            <td v-for="action in actions" :key="action" class="p-2 text-center">
-              <input type="checkbox" v-model="role.permissions[module]" :value="action" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <td class="p-2 break-words">
+                <div class="flex items-center" :style="{ 'padding-left': entry.depth * 20 + 'px' }">
+                  <button v-if="entry.node.children.length > 0" class="mr-2 focus:outline-none">
+                    <svg
+                      class="w-4 h-4 dark:text-white/90"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      :class="{ 'rotate-90': expanded[entry.node.id] }"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                  <span class="text-gray-900 dark:text-white/90">{{ entry.node.name }}</span>
+                </div>
+              </td>
+              <td v-for="action in actions" :key="action" class="p-2 text-center">
+                <input
+                  v-if="entry.node.children.length === 0"
+                  type="checkbox"
+                  :checked="role.permissions[entry.node.id]?.[action] || false"
+                  @change="togglePermission(entry.node.id, action)"
+                  class="w-4 h-4 text-indigo-500 border-gray-500 rounded focus:ring-indigo-400 cursor-pointer"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Step 3: Assign Users -->
     <div v-if="currentStep === 2">
       <h2 class="text-lg font-semibold mb-4 text-gray-700 dark:text-white">Assign Users</h2>
-      <MultipleSelectComponent
-        v-if="users.length > 0"
-        :model-value="role.assigned.users"
-        @update:model-value="(value) => role.assigned.users = value"
-        :options="users.map(user => ({ value: user.value, label: `${user.label} (${user.email})` }))"
-        :multiple="true"
-        :searchable="true"
-        :close-on-select="false"
-        :clear-on-select="false"
-        placeholder="Search by name or email..."
-        class="w-full"
-      />
-      <p v-else>Loading users...</p>
+      <div class="flex flex-col gap-4">
+        <template v-if="users.length > 0">
+          <MultipleSelectComponent
+            :model-value="role.assigned.users"
+            @update:model-value="(value) => (role.assigned.users = value)"
+            :options="users.map((user) => ({ value: user.value, label: `${user.label}` }))"
+            :multiple="true"
+            :searchable="true"
+            :close-on-select="false"
+            :clear-on-select="false"
+            placeholder="Search by name or email..."
+            class="w-full"
+          />
+        </template>
+        <p v-else class="mt-4">Loading users...</p>
+      </div>
     </div>
 
     <!-- Footer -->
@@ -140,14 +178,17 @@
 <script setup lang="ts">
 import MultipleSelectComponent from '@/components/forms/FormElements/MultipleSelectComponent.vue'
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
+
+// Initialize router
+const router = useRouter()
 
 // Type Definitions
-type Role = {
+interface Role {
   id: number
   name: string
   description: string
-  permissions: Record<string, string[]>
+  permissions: Record<number, Record<string, boolean>>
   assigned: { users: Item[] }
   status: string
 }
@@ -160,79 +201,130 @@ interface Item {
   email: string
 }
 
-// Mock Data
-const users = ref<Item[]>([
-  { value: 1, label: 'Alice Johnson', id: 1, name: 'Alice Johnson', email: 'alice@company.com' },
-  { value: 2, label: 'Bob Smith', id: 2, name: 'Bob Smith', email: 'bob@company.com' },
-  { value: 3, label: 'Carol Lee', id: 3, name: 'Carol Lee', email: 'carol@company.com' },
-  { value: 4, label: 'Micheal Jackson', id: 4, name: 'Micheal Jackson', email: 'jackson@company.com' },
-  { value: 5, label: 'Taylor Swift', id: 5, name: 'Taylor Swift', email: 'taylor@company.com' },
-  { value: 6, label: 'Lionel Messi', id: 6, name: 'Lionel Messi', email: 'm10@company.com' },
-  { value: 7, label: 'Cristiano Ronaldo', id: 7, name: 'Cristiano Ronaldo', email: 'cr7@company.com' },
-  { value: 8, label: 'Bùi Lan Hương', id: 8, name: 'Bùi Lan Hương', email: 'blh@company.com' },
-  { value: 9, label: 'Yu Ji Min', id: 9, name: 'Yu Ji Min', email: 'karina_aespa@company.com' },
-  { value: 10, label: 'Uzumaki Naruto', id: 10, name: 'Uzumaki Naruto', email: 'naruto@company.com' },
-  { value: 11, label: 'Uchiha Sasuke', id: 11, name: 'Uchiha Sasuke', email: 'uchiha@company.com' },
-  { value: 12, label: 'Zinedine Zidane', id: 12, name: 'Zinedine Zidane', email: 'zizou@company.com' },
-])
-
-const roles = ref<Role[]>([
-  {
-    id: 1,
-    name: 'Super Admin',
-    description: 'Full access role',
-    permissions: { Dashboard: ['View'], Users: ['View', 'Edit'], Settings: ['View'], Reports: [] },
-    assigned: {
-      users: [
-        { value: 1, label: 'Alice Johnson', id: 1, name: 'Alice Johnson', email: 'alice@company.com' },
-        { value: 2, label: 'Bob Smith', id: 2, name: 'Bob Smith', email: 'bob@company.com' }
-      ]
-    },
-    status: 'Active',
-  },
-])
-
+// Initialize role with proper types
 const role = ref<Role>({
   id: 0,
   name: '',
   description: '',
   permissions: {},
   assigned: { users: [] },
-  status: 'Active'
+  status: 'active',
 })
 
-// Constants and Reactive Variables
-const route = useRoute()
-const router = useRouter()
+// Mock Data
+const users = ref<Item[]>([
+  { value: 1, label: 'Alice Johnson', id: 1, name: 'Alice Johnson', email: 'alice@company.com' },
+  { value: 2, label: 'Bob Smith', id: 2, name: 'Bob Smith', email: 'bob@company.com' },
+  { value: 3, label: 'Carol Lee', id: 3, name: 'Carol Lee', email: 'carol@company.com' },
+  {
+    value: 4,
+    label: 'Micheal Jackson',
+    id: 4,
+    name: 'Micheal Jackson',
+    email: 'jackson@company.com',
+  },
+  { value: 5, label: 'Taylor Swift', id: 5, name: 'Taylor Swift', email: 'taylor@company.com' },
+  { value: 6, label: 'Lionel Messi', id: 6, name: 'Lionel Messi', email: 'm10@company.com' },
+  {
+    value: 7,
+    label: 'Cristiano Ronaldo',
+    id: 7,
+    name: 'Cristiano Ronaldo',
+    email: 'cr7@company.com',
+  },
+  { value: 8, label: 'Bùi Lan Hương', id: 8, name: 'Bùi Lan Hương', email: 'blh@company.com' },
+  { value: 9, label: 'Yu Ji Min', id: 9, name: 'Yu Ji Min', email: 'karina_aespa@company.com' },
+  {
+    value: 10,
+    label: 'Uzumaki Naruto',
+    id: 10,
+    name: 'Uzumaki Naruto',
+    email: 'naruto@company.com',
+  },
+  { value: 11, label: 'Uchiha Sasuke', id: 11, name: 'Uchiha Sasuke', email: 'uchiha@company.com' },
+])
 
-const steps = ['Role Details', 'Permissions', 'Assign Users']
-const currentStep = ref(0)
-const isEditMode = ref(false)
+const actions = ['view', 'create', 'update', 'delete'] as const
 
-const modules = ['Dashboard', 'Users', 'Settings', 'Reports']
-const actions = ['View', 'Edit', 'Create', 'Delete']
+interface PermissionNode {
+  id: number
+  name: string
+  children: PermissionNode[]
+}
 
-// Initialize permissions object with empty arrays
-modules.forEach((module) => {
-  if (!role.value.permissions[module]) {
-    role.value.permissions[module] = []
+const permissionTree = ref<PermissionNode[]>([
+  {
+    id: 1,
+    name: 'Users',
+    children: [
+      { id: 2, name: 'View Users', children: [] },
+      { id: 3, name: 'Create User', children: [] },
+      { id: 4, name: 'Update User', children: [] },
+      { id: 5, name: 'Delete User', children: [] },
+    ],
+  },
+  {
+    id: 6,
+    name: 'Roles',
+    children: [
+      { id: 7, name: 'View Roles', children: [] },
+      { id: 8, name: 'Create Role', children: [] },
+      { id: 9, name: 'Update Role', children: [] },
+      { id: 10, name: 'Delete Role', children: [] },
+    ],
+  },
+])
+
+const expanded = ref<Record<number, boolean>>({})
+
+const setExpanded = (nodes: PermissionNode[]) => {
+  nodes.forEach((node) => {
+    if (node.children.length > 0) {
+      expanded.value[node.id] = true
+      setExpanded(node.children)
+    }
+  })
+}
+
+setExpanded(permissionTree.value)
+
+const toggleExpand = (pageId: number) => {
+  expanded.value[pageId] = !expanded.value[pageId]
+}
+
+const flattenedPermissions = computed(() => {
+  const result: { node: PermissionNode; depth: number }[] = []
+  function flatten(nodes: PermissionNode[], depth: number = 0) {
+    nodes.forEach((node) => {
+      result.push({ node, depth })
+      if (node.children.length > 0 && expanded.value[node.id]) {
+        flatten(node.children, depth + 1)
+      }
+    })
   }
+  flatten(permissionTree.value)
+  return result
 })
+
+const togglePermission = (pageId: number, action: string) => {
+  if (!role.value.permissions[pageId]) {
+    role.value.permissions[pageId] = {}
+  }
+  role.value.permissions[pageId][action] = !role.value.permissions[pageId][action]
+}
 
 // Computed Properties
 const canProceed = computed(() => {
-  if (currentStep.value === 0) {
-    return role.value.name.trim() !== ''
-  }
-  if (currentStep.value === 1) {
-    return Object.values(role.value.permissions).some((permissions) => permissions.length > 0)
-  }
-  return true // Always allow proceeding in step 3
+  return currentStep.value === 0 ? role.value.name.trim() !== '' : true
 })
+
+const currentStep = ref(0)
+const isEditMode = ref(false)
+const steps = ['Role Details', 'Permissions', 'Assign Users']
 
 // Methods
 const nextStep = () => {
-  if (currentStep.value < steps.length - 1) {
+  if (canProceed.value) {
     currentStep.value++
   }
 }
@@ -241,34 +333,36 @@ const prevStep = () => {
   currentStep.value--
 }
 
-const saveRole = () => {
-  if (isEditMode.value) {
-    // Update existing role
-    const index = roles.value.findIndex((r) => r.id === role.value.id)
-    if (index !== -1) {
-      roles.value[index] = { ...role.value }
-    }
-  } else {
-    // Create new role
-    const newRole = { ...role.value, id: roles.value.length + 1 }
-    roles.value.push(newRole)
+const saveRole = async () => {
+  try {
+    // Add your save logic here
+    console.log('Saving role:', role.value)
+    // Reset to first step
+    currentStep.value = 0
+  } catch (error) {
+    console.error('Error saving role:', error)
   }
-  router.push('/settings/roles')
 }
 
 const cancel = () => {
+  // Reset form
+  role.value = {
+    id: 0,
+    name: '',
+    description: '',
+    permissions: {},
+    assigned: { users: [] },
+    status: 'active',
+  }
+  currentStep.value = 0
   router.push('/settings/roles')
 }
 
-// Initialize edit mode if editing an existing role
 onMounted(() => {
-  const roleId = route.params.id
+  const roleId = router.currentRoute.value.params.id
   if (roleId) {
     isEditMode.value = true
-    const roleToEdit = roles.value.find((r) => r.id === parseInt(roleId as string))
-    if (roleToEdit) {
-      role.value = { ...roleToEdit }
-    }
+    console.log('Editing role:', roleId)
   }
 })
 </script>

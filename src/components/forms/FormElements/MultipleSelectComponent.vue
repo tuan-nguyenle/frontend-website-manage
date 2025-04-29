@@ -2,11 +2,11 @@
   <div class="relative" ref="multiSelectRef">
     <div
       @click="toggleDropdown"
-      class="dark:bg-dark-900 h-11 flex items-center w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+      class="dark:bg-dark-900 flex items-center w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
       :class="{ 'text-gray-800 dark:text-white/90': isOpen }"
     >
-      <span v-if="selectedItems.length === 0" class="text-gray-400"> Select items... </span>
-      <div class="flex flex-wrap items-center flex-auto gap-2">
+      <span v-if="selectedItems.length === 0" class="text-gray-400"> {{ placeholder }} </span>
+      <div class="flex flex-wrap items-center flex-auto gap-2 min-h-[44px]">
         <div
           v-for="item in selectedItems"
           :key="item.value"
@@ -36,7 +36,7 @@
           </button>
         </div>
       </div>
-      <svg
+      <!-- <svg
         class="ml-auto"
         :class="{ 'transform rotate-180': isOpen }"
         width="20"
@@ -52,7 +52,7 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         />
-      </svg>
+      </svg> -->
     </div>
     <transition
       enter-active-class="transition duration-100 ease-out"
@@ -66,13 +66,21 @@
         v-if="isOpen"
         class="absolute z-10 w-full mt-1 bg-white rounded-lg shadow-sm dark:bg-gray-900"
       >
+        <div v-if="searchable" class="px-3 py-2 border-b border-gray-200 dark:border-gray-800">
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="multi-select-search w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            placeholder="Search..."
+          />
+        </div>
         <ul
           class="overflow-y-auto divide-y divide-gray-200 custom-scrollbar max-h-60 dark:divide-gray-800"
           role="listbox"
           aria-multiselectable="true"
         >
           <li
-            v-for="item in props.options"
+            v-for="item in filteredOptions"
             :key="item.value"
             @click="toggleItem(item)"
             class="relative flex items-center w-full px-3 py-2 border-transparent cursor-pointer first:rounded-t-lg last:rounded-b-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -104,41 +112,70 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
+  modelValue: {
+    type: Array,
+    default: () => [],
+  },
   options: {
     type: Array,
     required: true,
   },
-  modelValue: {
-    type: Array,
-    default: () => [],
+  multiple: {
+    type: Boolean,
+    default: false,
+  },
+  searchable: {
+    type: Boolean,
+    default: false,
+  },
+  placeholder: {
+    type: String,
+    default: 'Select items...',
   },
 })
 
 const emit = defineEmits(['update:modelValue'])
 
-const isOpen = ref(false)
 const selectedItems = ref(props.modelValue)
-const multiSelectRef = ref(null)
+const isOpen = ref(false)
+const searchQuery = ref('')
+
+const filteredOptions = computed(() => {
+  if (!searchQuery.value) return props.options
+  return props.options.filter((option) =>
+    option.label.toLowerCase().includes(searchQuery.value.toLowerCase()),
+  )
+})
 
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value
+  if (isOpen.value && props.searchable) {
+    setTimeout(() => {
+      const searchInput = document.querySelector('.multi-select-search')
+      searchInput?.focus()
+    }, 100)
+  }
 }
 
 const toggleItem = (item) => {
-  const index = selectedItems.value.findIndex((selected) => selected.value === item.value)
-  if (index === -1) {
-    selectedItems.value.push(item)
+  if (props.multiple) {
+    const index = selectedItems.value.findIndex((i) => i.value === item.value)
+    if (index === -1) {
+      selectedItems.value.push(item)
+    } else {
+      selectedItems.value.splice(index, 1)
+    }
   } else {
-    selectedItems.value.splice(index, 1)
+    selectedItems.value = [item]
   }
   emit('update:modelValue', selectedItems.value)
 }
 
 const removeItem = (item) => {
-  const index = selectedItems.value.findIndex((selected) => selected.value === item.value)
+  const index = selectedItems.value.findIndex((i) => i.value === item.value)
   if (index !== -1) {
     selectedItems.value.splice(index, 1)
     emit('update:modelValue', selectedItems.value)
@@ -150,8 +187,9 @@ const isSelected = (item) => {
 }
 
 const handleClickOutside = (event) => {
-  if (multiSelectRef.value && !multiSelectRef.value.contains(event.target)) {
+  if (isOpen.value && !event.target.closest('.relative')) {
     isOpen.value = false
+    searchQuery.value = ''
   }
 }
 
@@ -159,7 +197,7 @@ onMounted(() => {
   document.addEventListener('click', handleClickOutside)
 })
 
-onBeforeUnmount(() => {
+onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 </script>
