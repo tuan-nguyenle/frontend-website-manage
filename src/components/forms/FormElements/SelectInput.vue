@@ -47,14 +47,14 @@
 
     <!-- Multiple Select Input -->
     <div>
-      <MultipleSelect v-model="selectedItems" :options="optionss" class="w-full" />
+      <MultipleSelectComponent v-model="selectedItems" :options="optionss" class="w-full" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import MultipleSelect from './MultipleSelect.vue'
+import MultipleSelectComponent from './MultipleSelectComponent.vue'
 
 const optionss = [
   { value: 'apple', label: 'Apple' },
