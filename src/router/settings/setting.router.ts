@@ -1,5 +1,5 @@
 ﻿import AccessManagementView from '@/views/Settings/AccessManagementView.vue'
-import CreateRolePageView from '@/views/Settings/CreateRolePageView.vue'
+import RoleFormPageView from '@/views/Settings/RoleFormPageView.vue'
 import RoleManagementView from '@/views/Settings/RoleManagementView.vue'
 
 export default [
@@ -18,12 +18,14 @@ export default [
   {
     path: '/settings/roles/create',
     name: 'CreateRole',
-    component: CreateRolePageView,
+    component: RoleFormPageView,
+    meta: { title: 'Create Role' },
   },
   {
     path: '/settings/roles/edit/:id',
     name: 'EditRole',
-    component: CreateRolePageView,
-    props: true, // Pass route params as props to the component
+    component: RoleFormPageView,
+    meta: { title: 'Edit Role' },
+    props: true,
   },
 ]
