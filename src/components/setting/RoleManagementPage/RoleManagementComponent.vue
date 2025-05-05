@@ -176,15 +176,12 @@ import type { Role } from '@/types'
 const router = useRouter()
 const settingsStore = useSettingsStore()
 
-// Loading state
 const isLoading = ref(true)
 
-// Refresh roles
 const refreshRoles = async () => {
   isLoading.value = true
   try {
     await settingsStore.fetchRoles()
-    // Reset filters and pagination
     resetFilters()
     currentPage.value = 1
   } finally {
@@ -192,7 +189,6 @@ const refreshRoles = async () => {
   }
 }
 
-// Fetch roles when component is mounted
 onMounted(async () => {
   try {
     await settingsStore.fetchRoles()
@@ -201,7 +197,6 @@ onMounted(async () => {
   }
 })
 
-// Filter state
 const isDrawerOpen = ref(false)
 const selectedRoles = ref<string[]>([])
 const selectedStatuses = ref<string[]>([])
@@ -212,10 +207,8 @@ const searchCreatedBy = ref('')
 const minUsers = ref<number | null>(null)
 const maxUsers = ref<number | null>(null)
 
-// Computed unique roles
 const uniqueRoles = computed(() => [...new Set(settingsStore.roles.map((role) => role.role_name))])
 
-// Computed filtered roles
 const filteredRoles = computed(() => {
   return settingsStore.roles.filter((role) => {
     const matchesRole =
@@ -235,20 +228,16 @@ const filteredRoles = computed(() => {
   })
 })
 
-// Pagination state
 const currentPage = ref(1)
 const itemsPerPage = 10
 
-// Computed paginated roles
 const paginatedRoles = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   return filteredRoles.value.slice(start, start + itemsPerPage)
 })
 
-// Computed total pages
 const totalPages = computed(() => Math.ceil(filteredRoles.value.length / itemsPerPage))
 
-// Filter methods
 const openDrawer = () => {
   isDrawerOpen.value = true
 }
@@ -318,7 +307,6 @@ const applySearchValues = (values: {
   currentPage.value = 1
 }
 
-// Role management functions
 const addNewRole = () => {
   router.push('/settings/roles/create')
 }
@@ -327,7 +315,6 @@ const editRole = (role: Role) => {
   router.push(`/settings/roles/edit/${role.id}`)
 }
 
-// Pagination functions
 const prevPage = () => {
   if (currentPage.value > 1) currentPage.value--
 }

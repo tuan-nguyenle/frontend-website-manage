@@ -44,13 +44,11 @@ const filteredUsers = ref<SelectOption[]>([])
 const selectedUsers = ref<SelectOption[]>(props.role.assigned.users)
 const searchQuery = ref<string>('')
 
-// Compute available users excluding selected users
 const availableOptions = computed(() => {
   const selectedIds = new Set(selectedUsers.value.map((user) => user.id))
   return props.availableUsers.filter((user) => !selectedIds.has(user.id))
 })
 
-// Handle search and filter users
 const handleSearch = (search: string) => {
   searchQuery.value = search
   const lowerSearch = search.toLowerCase()
@@ -65,20 +63,16 @@ const handleSearch = (search: string) => {
   filteredUsers.value = filtered
 }
 
-// Update selected users and emit changes
 const updateSelectedUsers = (value: SelectOption[]) => {
   selectedUsers.value = value
   emit('update:role', { assigned: { users: value } })
-  // Re-run search to update filteredUsers excluding newly selected users
   handleSearch(searchQuery.value)
 }
 
-// Initialize filtered users on mount
 onMounted(() => {
   handleSearch('')
 })
 
-// Watch for changes in availableUsers to refresh filteredUsers
 watch(
   () => props.availableUsers,
   () => {

@@ -44,13 +44,11 @@
 
     <div v-if="currentStep === 1">
       <RolePermissionsComponent
-        :key="permissionTree.length"
         :role="role"
         :actions="actions"
         :permission-tree="permissionTree"
         :loading="loadingPermissions"
         @toggle-permission="togglePermission"
-        @retry-fetch="retryFetchPermissions"
       />
     </div>
 
@@ -149,7 +147,7 @@ const role = ref<Role>({
   created_by: '',
   pages: [],
   assigned: { users: [] },
-  permissions: {}
+  permissions: {},
 })
 
 const allUsers = ref<SelectOption[]>([])
@@ -160,14 +158,10 @@ const currentStep = ref(0)
 const isEditMode = ref(false)
 const steps = ['Role Details', 'Permissions', 'Assign Users']
 
-// Fetch users and permissions when the component mounts
 onMounted(async () => {
-  console.log('RoleFormComponent mounted, starting fetch')
   try {
-    loadingPermissions.value = true
-    const userPromise = apiService.get<SelectOption[]>('/user/get-all-user').then(response => {
-      console.log('Users fetched:', response.data)
-      allUsers.value = response.data.map(user => ({
+    const userPromise = apiService.get<SelectOption[]>('/user/get-all-user').then((response) => {
+      allUsers.value = response.data.map((user) => ({
         value: user.id,
         label: `${user.name} (${user.email})`,
         id: user.id,
@@ -176,31 +170,21 @@ onMounted(async () => {
       }))
     })
 
+    loadingPermissions.value = true
     const permissionPromise = apiService
       .get<{ pageTree: PermissionNode[] }>('/settings/get-page-tree-structure')
-      .then(response => {
-        console.log('Permission tree response:', response.data)
-        if (response.data && Array.isArray(response.data.pageTree)) {
-          permissionTree.value = response.data.pageTree.map(node => ({
-            ...node,
-            id: Number(node.id)
-          }))
-          console.log('Permission tree set:', permissionTree.value)
-        } else {
-          console.error('Invalid permission tree response:', response.data)
-          permissionTree.value = []
-        }
+      .then((response) => {
+        permissionTree.value = response.data.pageTree.map((node) => ({
+          ...node,
+          id: Number(node.id),
+        }))
       })
 
-    await Promise.allSettled([userPromise, permissionPromise]).then(results => {
-      console.log('Fetch results:', results)
-    })
+    await Promise.all([userPromise, permissionPromise])
   } catch (error) {
     console.error('Error fetching data:', error)
-    permissionTree.value = []
   } finally {
     loadingPermissions.value = false
-    console.log('Loading complete, permissionTree:', permissionTree.value)
   }
 
   const roleId = router.currentRoute.value.params.id
@@ -209,31 +193,6 @@ onMounted(async () => {
     console.log('Editing role:', roleId)
   }
 })
-
-const retryFetchPermissions = async () => {
-  try {
-    loadingPermissions.value = true
-    const response = await apiService.get<{ pageTree: PermissionNode[] }>(
-      '/settings/get-page-tree-structure'
-    )
-    console.log('Retry permission tree response:', response.data)
-    if (response.data && Array.isArray(response.data.pageTree)) {
-      permissionTree.value = response.data.pageTree.map(node => ({
-        ...node,
-        id: Number(node.id)
-      }))
-    } else {
-      console.error('Invalid retry permission tree response:', response.data)
-      permissionTree.value = []
-    }
-  } catch (error) {
-    console.error('Retry fetch error:', error)
-    permissionTree.value = []
-  } finally {
-    loadingPermissions.value = false
-    console.log('Retry complete, permissionTree:', permissionTree.value)
-  }
-}
 
 const canProceed = computed(() => {
   return currentStep.value === 0 ? role.value.role_name.trim() !== '' : true
@@ -255,14 +214,14 @@ const togglePermission = (pageId: number, action: string) => {
   }
   role.value.permissions[pageId][action] = !role.value.permissions[pageId][action]
 
-  const page = role.value.pages.find(p => p.page_id === pageId)
+  const page = role.value.pages.find((p) => p.page_id === pageId)
   if (!page) {
     role.value.pages.push({
       page_id: pageId,
-      permissions: [{ name: action }]
+      permissions: [{ name: action }],
     })
   } else {
-    const permissionIndex = page.permissions.findIndex(p => p.name === action)
+    const permissionIndex = page.permissions.findIndex((p) => p.name === action)
     if (permissionIndex === -1) {
       page.permissions.push({ name: action })
     }
@@ -280,7 +239,7 @@ const saveRole = async () => {
       created_by: 'current_user',
       pages: role.value.pages,
       assigned: role.value.assigned,
-      permissions: role.value.permissions
+      permissions: role.value.permissions,
     }
 
     console.log(roleData)
@@ -298,7 +257,7 @@ const cancel = () => {
     created_by: '',
     pages: [],
     assigned: { users: [] },
-    permissions: {}
+    permissions: {},
   }
   currentStep.value = 0
   router.push('/settings/roles')

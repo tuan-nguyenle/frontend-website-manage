@@ -10,12 +10,6 @@
       class="text-center py-8 text-gray-500 dark:text-gray-400"
     >
       No permissions available. Please try again or contact support.
-      <button
-        @click="emitRetryFetch"
-        class="mt-4 inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-2 text-sm bg-purple-500 text-white hover:bg-purple-600"
-      >
-        Retry
-      </button>
     </div>
     <div v-else class="overflow-hidden rounded-xl border dark:border-gray-700 dark:bg-gray-900">
       <table class="w-full table-fixed">
@@ -101,27 +95,25 @@ interface PermissionNode {
 const expanded = ref<Record<number, boolean>>({})
 const permissionTree = ref<PermissionNode[]>(props.permissionTree)
 
-// Log permissionTree on mount
-console.log('RolePermissionsComponent initial permissionTree:', props.permissionTree)
-
-// Watch permissionTree for changes
 watch(
   () => props.permissionTree,
   (newTree) => {
-    console.log('permissionTree updated:', newTree)
     permissionTree.value = newTree
   },
   { deep: true, immediate: true },
 )
 
-// Flatten the permission tree for table display
 const flattenedPermissions = computed(() => {
   const result: { node: PermissionNode; depth: number }[] = []
-  const flatten = (nodes: PermissionNode[], depth: number = 0) => {
+  const flatten = (nodes: PermissionNode[], depth: number = 0, parentExpanded: boolean = true) => {
     for (const node of nodes) {
-      result.push({ node, depth })
-      if (node.children.length > 0) {
-        flatten(node.children, depth + 1)
+      if (parentExpanded) {
+        result.push({ node, depth })
+      }
+      if (node.children.length > 0 && expanded.value[node.id] && parentExpanded) {
+        flatten(node.children, depth + 1, true)
+      } else if (node.children.length > 0 && parentExpanded) {
+        flatten(node.children, depth + 1, false)
       }
     }
   }
@@ -135,9 +127,5 @@ const toggleExpand = (pageId: number) => {
 
 const togglePermission = (pageId: number, action: string) => {
   emit('toggle-permission', pageId, action)
-}
-
-const emitRetryFetch = () => {
-  emit('retry-fetch')
 }
 </script>
