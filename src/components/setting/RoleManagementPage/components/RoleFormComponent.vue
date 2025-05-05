@@ -34,7 +34,7 @@
         :role="role"
         @update:role="
           (updatedRole) => {
-            role.name = updatedRole.name
+            role.role_name = updatedRole.role_name
             role.description = updatedRole.description
           }
         "
@@ -102,17 +102,32 @@
 import RoleDetailsComponent from './RoleDetails/RoleDetailsComponent.vue'
 import RolePermissionsComponent from './RolePermissions/RolePermissionsComponent.vue'
 import RoleUsersComponent from './RoleUsers/RoleUsersComponent.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineEmits } from 'vue'
 import { useRouter } from 'vue-router'
+// import { useSettingsStore } from '@/store'
 
 // Type Definitions
-interface Role {
+interface SelectOption {
+  value: number
+  label: string
   id: number
   name: string
+  email: string
+}
+
+interface Role {
+  id: number
+  role_name: string
   description: string
+  created_by: string
+  pages: Page[]
+  assigned: { users: SelectOption[] }
   permissions: Record<number, Record<string, boolean>>
-  assigned: { users: Item[] }
-  status: string
+}
+
+interface Page {
+  page_id: number
+  permissions: { name: string }[]
 }
 
 interface Item {
@@ -129,12 +144,15 @@ const router = useRouter()
 // Initialize role
 const role = ref<Role>({
   id: 0,
-  name: '',
+  role_name: '',
   description: '',
-  permissions: {},
+  created_by: '',
+  pages: [] as Page[],
   assigned: { users: [] },
-  status: 'active',
+  permissions: {} as Record<number, Record<string, boolean>>
 })
+
+
 
 // Mock Data
 const users = ref<Item[]>([
@@ -173,7 +191,7 @@ const actions: string[] = ['View', 'Create', 'Update', 'Delete']
 
 // Computed Properties
 const canProceed = computed(() => {
-  return currentStep.value === 0 ? role.value.name.trim() !== '' : true
+  return currentStep.value === 0 ? role.value.role_name.trim() !== '' : true
 })
 
 const currentStep = ref(0)
@@ -192,20 +210,52 @@ const prevStep = () => {
 }
 
 const togglePermission = (pageId: number, action: string) => {
+  // Update the permissions object
   if (!role.value.permissions[pageId]) {
-    role.value.permissions[pageId] = {}
+    role.value.permissions[pageId] = {} as Record<string, boolean>
   }
   role.value.permissions[pageId][action] = !role.value.permissions[pageId][action]
+
+  // Update the pages array
+  const page = role.value.pages.find(p => p.page_id === pageId)
+  if (!page) {
+    role.value.pages.push({
+      page_id: pageId,
+      permissions: [{ name: action }]
+    })
+  } else {
+    const permissionIndex = page.permissions.findIndex(p => p.name === action)
+    if (permissionIndex === -1) {
+      page.permissions.push({ name: action })
+    }
+  }
 }
+
+const emit = defineEmits(['saved'])
 
 const saveRole = async () => {
   try {
-    // Add your save logic here
-    console.log('Saving role:', role.value)
-    // Reset to first step
-    currentStep.value = 0
+    const roleData: Role = {
+      id: role.value.id,
+      role_name: role.value.role_name,
+      description: role.value.description,
+      created_by: 'current_user',
+      pages: role.value.pages,
+      assigned: role.value.assigned,
+      permissions: role.value.permissions
+    }
+
+    console.log(roleData)
+
+    // if (role.value.id) {
+    //   await settingsStore.updateRole(roleData)
+    // } else {
+    //   await settingsStore.createRole(roleData)
+    // }
+
+    emit('saved')
   } catch (error) {
-    console.error('Error saving role:', error)
+    console.error('Failed to save role:', error)
   }
 }
 
@@ -213,11 +263,12 @@ const cancel = () => {
   // Reset form
   role.value = {
     id: 0,
-    name: '',
+    role_name: '',
     description: '',
-    permissions: {},
+    created_by: '',
+    pages: [] as Page[],
     assigned: { users: [] },
-    status: 'active',
+    permissions: {} as Record<number, Record<string, boolean>>
   }
   currentStep.value = 0
   router.push('/settings/roles')

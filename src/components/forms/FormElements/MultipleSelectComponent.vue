@@ -112,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 
 const props = defineProps({
   modelValue: {
@@ -137,17 +137,16 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'search'])
 
 const selectedItems = ref(props.modelValue)
 const isOpen = ref(false)
 const searchQuery = ref('')
 
-const filteredOptions = computed(() => {
-  if (!searchQuery.value) return props.options
-  return props.options.filter((option) =>
-    option.label.toLowerCase().includes(searchQuery.value.toLowerCase()),
-  )
+const filteredOptions = computed(() => props.options)
+
+watch(searchQuery, (newQuery) => {
+  emit('search', newQuery)
 })
 
 const toggleDropdown = () => {

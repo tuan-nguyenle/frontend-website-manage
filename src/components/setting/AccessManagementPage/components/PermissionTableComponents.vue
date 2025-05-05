@@ -1,4 +1,8 @@
-﻿<script setup lang="ts">
+﻿<template>
+  <div class=""></div>
+</template>
+<!--
+<script setup lang="ts">
 import type { PermissionNode } from '@/types'
 import { defineProps, defineEmits, ref, computed } from 'vue'
 import { watch } from 'vue'
@@ -144,4 +148,4 @@ input[type='checkbox']:checked::after {
 svg {
   transition: transform 0.2s;
 }
-</style>
+</style> -->

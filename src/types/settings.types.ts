@@ -1,15 +1,18 @@
-﻿export interface Role {
+export interface Role {
   id: number
   role_name: string
-  pages: {
-    page_id: number
-    page_name: string
-    permissions: string[]
-  }[]
+  description: string
+  created_by: string
+  number_of_user: number
+  status: '0' | '1'
+  pages: Page[]
 }
 
-export interface PermissionNode {
-  id: number
+export interface Page {
+  page_id: number
+  permissions: Permission[]
+}
+
+export interface Permission {
   name: string
-  children: PermissionNode[]
 }

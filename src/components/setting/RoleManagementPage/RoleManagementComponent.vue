@@ -1,47 +1,142 @@
 ﻿<template>
   <div
-    class="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12"
+    class="min-h-screen dark:border-gray-800 dark:bg-white/[0.03] rounded-2xl border border-gray-200 bg-white px-5 py-7 xl:px-10 xl:py-12"
   >
     <!-- Filters and Add Button -->
     <div class="flex justify-between mb-4">
-      <button @click="openDrawer" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+      <button
+        @click="openDrawer"
+        class="inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-3 text-sm bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
+      >
         Filters
       </button>
-      <button
-        @click="addNewRole"
-        class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
-      >
-        Add New Role
-      </button>
+      <div class="flex gap-2">
+        <button
+          @click="refreshRoles"
+          class="group inline-flex items-center justify-center gap-2 px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
+        >
+          <div
+            class="transform relative inline-flex items-center justify-center w-4 h-4 transition-all duration-200 ease-in-out group-hover:rotate-180 group-hover:scale-110"
+          >
+            <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+          </div>
+          <span>Refresh</span>
+        </button>
+        <button
+          @click="addNewRole"
+          class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700"
+        >
+          Add New Role
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Drawer -->
+    <FilterDrawerComponent
+      v-model:isOpen="isDrawerOpen"
+      :unique-roles="uniqueRoles"
+      :selected-roles="selectedRoles"
+      :select-all-roles="selectAllRoles"
+      :selected-statuses="selectedStatuses"
+      :select-all-statuses="selectAllStatuses"
+      @toggle-all-roles="toggleAllRoles"
+      @toggle-role="toggleRole"
+      @toggle-all-statuses="toggleAllStatuses"
+      @toggle-status="toggleStatus"
+      @reset="resetFilters"
+      @apply-search="applySearchValues"
+      @close="closeDrawer"
+    />
+
+    <!-- Loading indicator -->
+    <div v-if="isLoading" class="flex justify-center items-center min-h-[200px]">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
     </div>
 
     <!-- Table -->
-    <div class="bg-white shadow-md rounded-lg overflow-hidden">
-      <table class="w-full">
-        <thead class="bg-gray-50">
+    <div
+      v-else
+      class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]"
+    >
+      <table class="w-full table-fixed">
+        <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
-            <th class="p-3 text-left">Role Name</th>
-            <th class="p-3 text-left">Created By</th>
-            <th class="p-3 text-left">Modified By</th>
-            <th class="p-3 text-left">Number of Users</th>
-            <th class="p-3 text-left">Status</th>
-            <th class="p-3 text-left">Actions</th>
+            <th class="p-4 text-left text-base font-medium text-gray-900 dark:text-white">
+              Role Name
+            </th>
+            <th
+              class="p-4 text-left text-base font-medium text-gray-900 dark:text-white w-[30%] min-w-[300px]"
+            >
+              Description
+            </th>
+            <th class="p-4 text-left text-base font-medium text-gray-900 dark:text-white">
+              Created By
+            </th>
+            <th class="p-4 text-left text-base font-medium text-gray-900 dark:text-white">
+              Number of Users
+            </th>
+            <th class="p-4 text-left text-base font-medium text-gray-900 dark:text-white">
+              Status
+            </th>
+            <th class="p-4 text-left text-base font-medium text-gray-900 dark:text-white">
+              Actions
+            </th>
           </tr>
         </thead>
-        <tbody>
-          <tr v-for="role in paginatedRoles" :key="role.id" class="border-b">
-            <td class="p-3">{{ role.name }}</td>
-            <td class="p-3">{{ role.createdBy }}</td>
-            <td class="p-3">{{ role.modifiedBy }}</td>
-            <td class="p-3">{{ role.numUsers }}</td>
-            <td class="p-3">
-              <span :class="role.status === 'Active' ? 'text-green-500' : 'text-gray-500'">{{
-                role.status
-              }}</span>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          <tr
+            v-for="role in paginatedRoles"
+            :key="role.id"
+            class="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          >
+            <td class="p-4 text-md text-gray-900 dark:text-white">
+              {{ role.role_name }}
             </td>
-            <td class="p-3">
-              <button @click="editRole(role)" class="text-blue-500 mr-2">Edit</button>
-              <button @click="deleteRole(role)" class="text-red-500">Delete</button>
+            <td class="p-4 text-md text-gray-900 dark:text-white w-[30%] min-w-[300px]">
+              {{ role.description }}
+            </td>
+            <td class="p-4 text-md text-gray-900 dark:text-white">
+              {{ role.created_by }}
+            </td>
+            <td class="p-4 text-md text-gray-900 dark:text-white">
+              {{ role.number_of_user }}
+            </td>
+            <td class="p-4">
+              <span
+                :class="
+                  role.status === '1'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-600/20 dark:text-lime-400'
+                    : 'bg-gray-200 text-gray-800 dark:bg-gray-600/20 dark:text-white/90'
+                "
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium"
+              >
+                {{ role.status === '1' ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td class="p-4 text-lg text-gray-900 dark:text-white whitespace-nowrap">
+              <div class="flex items-center space-x-3">
+                <button
+                  @click="editRole(role)"
+                  class="inline-flex items-center px-2 py-1 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                >
+                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                  Edit
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -53,7 +148,7 @@
       <button
         @click="prevPage"
         :disabled="currentPage === 1"
-        class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+        class="inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-3 text-sm bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
       >
         Previous
       </button>
@@ -63,141 +158,48 @@
       <button
         @click="nextPage"
         :disabled="currentPage === totalPages"
-        class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+        class="inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-3 text-sm bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
       >
         Next
       </button>
-    </div>
-
-    <!-- Drawer for Filters -->
-    <div
-      v-if="isDrawerOpen"
-      class="fixed inset-0 bg-opacity-50 flex justify-end z-50"
-      @click="closeDrawer"
-    >
-      <div class="bg-white w-80 h-full p-6 shadow-lg" @click.stop>
-        <h3 class="font-bold mb-4">Filter</h3>
-        <!-- Roles Filter -->
-        <div class="mb-4">
-          <h4 class="font-semibold mb-2">Roles</h4>
-          <div class="flex items-center mb-2">
-            <input
-              type="checkbox"
-              :checked="selectAllRoles"
-              @change="toggleAllRoles"
-              class="mr-2"
-            />
-            <label>Select All</label>
-          </div>
-          <div v-for="role in uniqueRoles" :key="role as string" class="flex items-center mb-2">
-            <input
-              type="checkbox"
-              :checked="selectedRoles.includes(role)"
-              @change="toggleRole(role)"
-              class="mr-2"
-            />
-            <label>{{ role }}</label>
-          </div>
-        </div>
-        <!-- Status Filter -->
-        <div class="mb-4">
-          <h4 class="font-semibold mb-2">Status</h4>
-          <div class="flex items-center mb-2">
-            <input
-              type="checkbox"
-              :checked="selectAllStatuses"
-              @change="toggleAllStatuses"
-              class="mr-2"
-            />
-            <label>Select All</label>
-          </div>
-          <div class="flex items-center mb-2">
-            <input
-              type="checkbox"
-              :checked="selectedStatuses.includes('Active')"
-              @change="toggleStatus('Active')"
-              class="mr-2"
-            />
-            <label>Active</label>
-          </div>
-          <div class="flex items-center mb-2">
-            <input
-              type="checkbox"
-              :checked="selectedStatuses.includes('Inactive')"
-              @change="toggleStatus('Inactive')"
-              class="mr-2"
-            />
-            <label>Inactive</label>
-          </div>
-        </div>
-        <!-- Apply and Reset Buttons -->
-        <div class="flex justify-between mt-4">
-          <button @click="resetFilters" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
-            Reset
-          </button>
-          <button
-            @click="applyFilters"
-            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Apply Filters
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-
-// Define Role type
-type Role = {
-  id: number
-  name: string
-  createdBy: string
-  modifiedBy: string
-  numUsers: number
-  status: string
-  permissions: Record<string, string[]>
-  assigned: { users: number[] }
-}
+import FilterDrawerComponent from './components/FilterDrawerComponent.vue'
+import { useSettingsStore } from '@/store'
+import type { Role } from '@/types'
 
 const router = useRouter()
+const settingsStore = useSettingsStore()
 
-// Mock data for roles
-const originalRoles = ref<Role[]>([
-  {
-    id: 1,
-    name: 'Super Admin',
-    createdBy: 'Chiamaka Okafor',
-    modifiedBy: 'Oluwatoyin Ogundele',
-    numUsers: 11,
-    status: 'Active',
-    permissions: { Dashboard: ['View'], Users: ['View', 'Edit'], Settings: ['View'], Reports: [] },
-    assigned: { users: [1, 2] },
-  },
-  {
-    id: 2,
-    name: 'Admin IT Support',
-    createdBy: 'Chidinma Uche',
-    modifiedBy: 'Chidinma Eze',
-    numUsers: 9,
-    status: 'Active',
-    permissions: { Dashboard: ['View'], Users: ['View'], Settings: [], Reports: [] },
-    assigned: { users: [3] },
-  },
-  {
-    id: 3,
-    name: 'Admin IT Support',
-    createdBy: 'John Doe',
-    modifiedBy: 'Jane Smith',
-    numUsers: 15,
-    status: 'Inactive',
-    permissions: { Dashboard: ['View'], Users: ['View', 'Edit'], Settings: ['View'], Reports: [] },
-    assigned: { users: [] },
-  },
-])
+// Loading state
+const isLoading = ref(true)
+
+// Refresh roles
+const refreshRoles = async () => {
+  isLoading.value = true
+  try {
+    await settingsStore.fetchRoles()
+    // Reset filters and pagination
+    resetFilters()
+    currentPage.value = 1
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Fetch roles when component is mounted
+onMounted(async () => {
+  try {
+    await settingsStore.fetchRoles()
+  } finally {
+    isLoading.value = false
+  }
+})
 
 // Filter state
 const isDrawerOpen = ref(false)
@@ -205,17 +207,31 @@ const selectedRoles = ref<string[]>([])
 const selectedStatuses = ref<string[]>([])
 const selectAllRoles = ref(false)
 const selectAllStatuses = ref(false)
+const searchDescription = ref('')
+const searchCreatedBy = ref('')
+const minUsers = ref<number | null>(null)
+const maxUsers = ref<number | null>(null)
 
-// Computed unique roles and statuses
-const uniqueRoles = computed(() => [...new Set(originalRoles.value.map((role) => role.name))])
+// Computed unique roles
+const uniqueRoles = computed(() => [...new Set(settingsStore.roles.map((role) => role.role_name))])
 
 // Computed filtered roles
 const filteredRoles = computed(() => {
-  return originalRoles.value.filter((role) => {
-    const matchesRole = selectedRoles.value.length === 0 || selectedRoles.value.includes(role.name)
+  return settingsStore.roles.filter((role) => {
+    const matchesRole =
+      selectedRoles.value.length === 0 || selectedRoles.value.includes(role.role_name)
     const matchesStatus =
       selectedStatuses.value.length === 0 || selectedStatuses.value.includes(role.status)
-    return matchesRole && matchesStatus
+    const matchesDescription =
+      !searchDescription.value ||
+      role.description.toLowerCase().includes(searchDescription.value.toLowerCase())
+    const matchesCreatedBy =
+      !searchCreatedBy.value ||
+      role.created_by.toLowerCase().includes(searchCreatedBy.value.toLowerCase())
+    const matchesUsers =
+      (!minUsers.value || role.number_of_user >= minUsers.value) &&
+      (!maxUsers.value || role.number_of_user <= maxUsers.value)
+    return matchesRole && matchesStatus && matchesDescription && matchesCreatedBy && matchesUsers
   })
 })
 
@@ -262,7 +278,7 @@ const toggleRole = (role: string) => {
 const toggleAllStatuses = () => {
   selectAllStatuses.value = !selectAllStatuses.value
   if (selectAllStatuses.value) {
-    selectedStatuses.value = ['Active', 'Inactive']
+    selectedStatuses.value = ['0', '1']
   } else {
     selectedStatuses.value = []
   }
@@ -270,10 +286,10 @@ const toggleAllStatuses = () => {
 
 const toggleStatus = (status: string) => {
   const index = selectedStatuses.value.indexOf(status)
-  if (index > -1) {
-    selectedStatuses.value.splice(index, 1)
-  } else {
+  if (index === -1) {
     selectedStatuses.value.push(status)
+  } else {
+    selectedStatuses.value.splice(index, 1)
   }
 }
 
@@ -282,10 +298,23 @@ const resetFilters = () => {
   selectedStatuses.value = []
   selectAllRoles.value = false
   selectAllStatuses.value = false
+  searchDescription.value = ''
+  searchCreatedBy.value = ''
+  minUsers.value = null
+  maxUsers.value = null
   currentPage.value = 1
 }
 
-const applyFilters = () => {
+const applySearchValues = (values: {
+  description: string
+  createdBy: string
+  minUsers: number | null
+  maxUsers: number | null
+}) => {
+  searchDescription.value = values.description
+  searchCreatedBy.value = values.createdBy
+  minUsers.value = values.minUsers
+  maxUsers.value = values.maxUsers
   currentPage.value = 1
 }
 
@@ -296,13 +325,6 @@ const addNewRole = () => {
 
 const editRole = (role: Role) => {
   router.push(`/settings/roles/edit/${role.id}`)
-}
-
-const deleteRole = (role: Role) => {
-  const index = originalRoles.value.findIndex((r) => r.id === role.id)
-  if (index !== -1) {
-    originalRoles.value.splice(index, 1)
-  }
 }
 
 // Pagination functions

@@ -1,19 +1,16 @@
 <template>
   <div>
-    <h2 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white/90">
-      Assign Permissions
-    </h2>
-    <div class="overflow-hidden rounded-xl border dark:border-gray-700 dark:bg-gray-900">
+    <h2 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white/90">Assign Permissions</h2>
+    <div v-if="loading" class="text-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
+    </div>
+    <div v-else class="overflow-hidden rounded-xl border dark:border-gray-700 dark:bg-gray-900">
       <table class="w-full table-fixed">
         <thead class="border dark:border-gray-700 dark:bg-gray-800">
           <tr class="border-b border-gray-300 dark:border-gray-700">
-            <th class="w-3/5 p-4 text-left dark:text-white/90">{{ $t('Permissions') }}</th>
-            <th
-              v-for="action in props.actions"
-              :key="action"
-              class="w-12 p-4 text-center dark:text-white/90"
-            >
-              {{ $t(action) }}
+            <th class="w-3/5 p-4 text-left dark:text-white/90">Permissions</th>
+            <th v-for="action in actions" :key="action" class="w-12 p-4 text-center dark:text-white/90">
+              {{ action }}
             </th>
           </tr>
         </thead>
@@ -45,7 +42,7 @@
                 <span class="text-gray-900 dark:text-white/90">{{ entry.node.name }}</span>
               </div>
             </td>
-            <td v-for="action in props.actions" :key="action" class="p-2 text-center">
+            <td v-for="action in actions" :key="action" class="p-2 text-center">
               <input
                 v-if="entry.node.children.length === 0"
                 type="checkbox"
@@ -62,13 +59,14 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, ref, computed } from 'vue'
+import { defineProps, defineEmits, ref, computed, onMounted } from 'vue'
+import { apiService } from '@/services/api.services'
 
 const props = defineProps<{
+  actions: string[] // e.g., ['View', 'Create', 'Update', 'Delete']
   role: {
     permissions: Record<number, Record<string, boolean>>
   }
-  actions: string[]
 }>()
 
 const emit = defineEmits<{
@@ -81,59 +79,45 @@ interface PermissionNode {
   children: PermissionNode[]
 }
 
-const permissionTree = ref<PermissionNode[]>([
-  {
-    id: 1,
-    name: 'Users',
-    children: [
-      { id: 2, name: 'View Users', children: [] },
-      { id: 3, name: 'Create User', children: [] },
-      { id: 4, name: 'Update User', children: [] },
-      { id: 5, name: 'Delete User', children: [] }
-    ]
-  },
-  {
-    id: 6,
-    name: 'Roles',
-    children: [
-      { id: 7, name: 'View Roles', children: [] },
-      { id: 8, name: 'Create Role', children: [] },
-      { id: 9, name: 'Update Role', children: [] },
-      { id: 10, name: 'Delete Role', children: [] }
-    ]
-  }
-])
-
+const permissionTree = ref<PermissionNode[]>([])
+const loading = ref(true)
 const expanded = ref<Record<number, boolean>>({})
 
-const setExpanded = (nodes: PermissionNode[]) => {
-  nodes.forEach((node) => {
-    if (node.children.length > 0) {
-      expanded.value[node.id] = true
-      setExpanded(node.children)
-    }
-  })
-}
+// Fetch permissions tree from API
+onMounted(async () => {
+  try {
+    const response = await apiService.get<{ pageTree: PermissionNode[] }>(
+      '/settings/get-page-tree-structure'
+    )
+    permissionTree.value = response.data.pageTree.map(node => ({
+      ...node,
+      id: Number(node.id) // Ensure id is a number
+    }))
+  } catch (error) {
+    console.error('Error fetching page tree structure:', error)
+  } finally {
+    loading.value = false
+  }
+})
 
-setExpanded(permissionTree.value)
-
-const toggleExpand = (pageId: number) => {
-  expanded.value[pageId] = !expanded.value[pageId]
-}
-
+// Flatten the permission tree for table display
 const flattenedPermissions = computed(() => {
   const result: { node: PermissionNode; depth: number }[] = []
-  function flatten(nodes: PermissionNode[], depth: number = 0) {
-    nodes.forEach((node) => {
+  const flatten = (nodes: PermissionNode[], depth: number = 0) => {
+    for (const node of nodes) {
       result.push({ node, depth })
-      if (node.children.length > 0 && expanded.value[node.id]) {
+      if (node.children.length > 0) {
         flatten(node.children, depth + 1)
       }
-    })
+    }
   }
   flatten(permissionTree.value)
   return result
 })
+
+const toggleExpand = (pageId: number) => {
+  expanded.value[pageId] = !expanded.value[pageId]
+}
 
 const togglePermission = (pageId: number, action: string) => {
   emit('toggle-permission', pageId, action)
