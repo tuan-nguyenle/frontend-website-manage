@@ -9,8 +9,6 @@
         :multiple="true"
         :searchable="true"
         @search="handleSearch"
-        :close-on-select="false"
-        :clear-on-select="false"
         placeholder="Search by name or email..."
         class="w-full"
       />
@@ -20,8 +18,7 @@
 
 <script setup lang="ts">
 import MultipleSelectComponent from '@/components/forms/FormElements/MultipleSelectComponent.vue'
-import { defineProps, defineEmits, ref } from 'vue'
-import { apiService } from '@/services/api.services'
+import { defineProps, defineEmits, ref, computed, onMounted, watch } from 'vue'
 
 interface SelectOption {
   value: number
@@ -35,6 +32,7 @@ interface Props {
   role: {
     assigned: { users: SelectOption[] }
   }
+  availableUsers: SelectOption[]
 }
 
 const props = defineProps<Props>()
@@ -44,29 +42,47 @@ const emit = defineEmits<{
 
 const filteredUsers = ref<SelectOption[]>([])
 const selectedUsers = ref<SelectOption[]>(props.role.assigned.users)
+const searchQuery = ref<string>('')
 
-const handleSearch = async (search: string) => {
-  try {
-    const url = search
-      ? `/user/get-all-user?search=${encodeURIComponent(search)}`
-      : '/user/get-all-user'
-    const response = await apiService.get<SelectOption[]>(url)
-    // Map API response to SelectOption and limit to 5
-    filteredUsers.value = response.data.slice(0, 5).map((user) => ({
-      value: user.id,
-      label: `${user.name} (${user.email})`,
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    }))
-  } catch (error) {
-    console.error('Error fetching users:', error)
-    filteredUsers.value = []
-  }
+// Compute available users excluding selected users
+const availableOptions = computed(() => {
+  const selectedIds = new Set(selectedUsers.value.map((user) => user.id))
+  return props.availableUsers.filter((user) => !selectedIds.has(user.id))
+})
+
+// Handle search and filter users
+const handleSearch = (search: string) => {
+  searchQuery.value = search
+  const lowerSearch = search.toLowerCase()
+  const filtered = availableOptions.value
+    .filter((user) =>
+      lowerSearch
+        ? user.name.toLowerCase().includes(lowerSearch) ||
+          user.email.toLowerCase().includes(lowerSearch)
+        : true,
+    )
+    .slice(0, 5)
+  filteredUsers.value = filtered
 }
 
+// Update selected users and emit changes
 const updateSelectedUsers = (value: SelectOption[]) => {
   selectedUsers.value = value
   emit('update:role', { assigned: { users: value } })
+  // Re-run search to update filteredUsers excluding newly selected users
+  handleSearch(searchQuery.value)
 }
+
+// Initialize filtered users on mount
+onMounted(() => {
+  handleSearch('')
+})
+
+// Watch for changes in availableUsers to refresh filteredUsers
+watch(
+  () => props.availableUsers,
+  () => {
+    handleSearch(searchQuery.value)
+  },
+)
 </script>

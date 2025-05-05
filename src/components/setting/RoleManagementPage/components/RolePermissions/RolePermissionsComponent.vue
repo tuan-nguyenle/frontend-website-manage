@@ -1,15 +1,32 @@
+<!-- RolePermissionsComponent.vue -->
 <template>
   <div>
     <h2 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white/90">Assign Permissions</h2>
-    <div v-if="loading" class="text-center py-8">
+    <div v-if="loading" class="text-center py-8" role="status" aria-label="Loading permissions">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
+    </div>
+    <div
+      v-else-if="permissionTree.length === 0"
+      class="text-center py-8 text-gray-500 dark:text-gray-400"
+    >
+      No permissions available. Please try again or contact support.
+      <button
+        @click="emitRetryFetch"
+        class="mt-4 inline-flex items-center justify-center font-medium gap-2 rounded-lg transition px-4 py-2 text-sm bg-purple-500 text-white hover:bg-purple-600"
+      >
+        Retry
+      </button>
     </div>
     <div v-else class="overflow-hidden rounded-xl border dark:border-gray-700 dark:bg-gray-900">
       <table class="w-full table-fixed">
         <thead class="border dark:border-gray-700 dark:bg-gray-800">
           <tr class="border-b border-gray-300 dark:border-gray-700">
             <th class="w-3/5 p-4 text-left dark:text-white/90">Permissions</th>
-            <th v-for="action in actions" :key="action" class="w-12 p-4 text-center dark:text-white/90">
+            <th
+              v-for="action in actions"
+              :key="action"
+              class="w-12 p-4 text-center dark:text-white/90"
+            >
               {{ action }}
             </th>
           </tr>
@@ -59,18 +76,20 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, ref, computed, onMounted } from 'vue'
-import { apiService } from '@/services/api.services'
+import { defineProps, defineEmits, ref, computed, watch } from 'vue'
 
 const props = defineProps<{
-  actions: string[] // e.g., ['View', 'Create', 'Update', 'Delete']
+  actions: string[]
   role: {
     permissions: Record<number, Record<string, boolean>>
   }
+  permissionTree: PermissionNode[]
+  loading: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'toggle-permission', pageId: number, action: string): void
+  (e: 'retry-fetch'): void
 }>()
 
 interface PermissionNode {
@@ -79,26 +98,21 @@ interface PermissionNode {
   children: PermissionNode[]
 }
 
-const permissionTree = ref<PermissionNode[]>([])
-const loading = ref(true)
 const expanded = ref<Record<number, boolean>>({})
+const permissionTree = ref<PermissionNode[]>(props.permissionTree)
 
-// Fetch permissions tree from API
-onMounted(async () => {
-  try {
-    const response = await apiService.get<{ pageTree: PermissionNode[] }>(
-      '/settings/get-page-tree-structure'
-    )
-    permissionTree.value = response.data.pageTree.map(node => ({
-      ...node,
-      id: Number(node.id) // Ensure id is a number
-    }))
-  } catch (error) {
-    console.error('Error fetching page tree structure:', error)
-  } finally {
-    loading.value = false
-  }
-})
+// Log permissionTree on mount
+console.log('RolePermissionsComponent initial permissionTree:', props.permissionTree)
+
+// Watch permissionTree for changes
+watch(
+  () => props.permissionTree,
+  (newTree) => {
+    console.log('permissionTree updated:', newTree)
+    permissionTree.value = newTree
+  },
+  { deep: true, immediate: true },
+)
 
 // Flatten the permission tree for table display
 const flattenedPermissions = computed(() => {
@@ -121,5 +135,9 @@ const toggleExpand = (pageId: number) => {
 
 const togglePermission = (pageId: number, action: string) => {
   emit('toggle-permission', pageId, action)
+}
+
+const emitRetryFetch = () => {
+  emit('retry-fetch')
 }
 </script>

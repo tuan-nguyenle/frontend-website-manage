@@ -1,3 +1,4 @@
+<!-- RoleFormComponent.vue -->
 <template>
   <div
     class="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12"
@@ -43,16 +44,20 @@
 
     <div v-if="currentStep === 1">
       <RolePermissionsComponent
+        :key="permissionTree.length"
         :role="role"
         :actions="actions"
+        :permission-tree="permissionTree"
+        :loading="loadingPermissions"
         @toggle-permission="togglePermission"
+        @retry-fetch="retryFetchPermissions"
       />
     </div>
 
     <div v-if="currentStep === 2">
       <RoleUsersComponent
         :role="role"
-        :users="users"
+        :available-users="allUsers"
         @update:role="
           (updatedRole) => {
             role.assigned.users = updatedRole.assigned.users
@@ -102,11 +107,10 @@
 import RoleDetailsComponent from './RoleDetails/RoleDetailsComponent.vue'
 import RolePermissionsComponent from './RolePermissions/RolePermissionsComponent.vue'
 import RoleUsersComponent from './RoleUsers/RoleUsersComponent.vue'
-import { ref, computed, onMounted, defineEmits } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-// import { useSettingsStore } from '@/store'
+import { apiService } from '@/services/api.services'
 
-// Type Definitions
 interface SelectOption {
   value: number
   label: string
@@ -130,75 +134,111 @@ interface Page {
   permissions: { name: string }[]
 }
 
-interface Item {
-  value: number
-  label: string
+interface PermissionNode {
   id: number
   name: string
-  email: string
+  children: PermissionNode[]
 }
 
-// Initialize router
 const router = useRouter()
 
-// Initialize role
 const role = ref<Role>({
   id: 0,
   role_name: '',
   description: '',
   created_by: '',
-  pages: [] as Page[],
+  pages: [],
   assigned: { users: [] },
-  permissions: {} as Record<number, Record<string, boolean>>
+  permissions: {}
 })
 
-
-
-// Mock Data
-const users = ref<Item[]>([
-  { value: 1, label: 'Alice Johnson', id: 1, name: 'Alice Johnson', email: 'alice@company.com' },
-  { value: 2, label: 'Bob Smith', id: 2, name: 'Bob Smith', email: 'bob@company.com' },
-  { value: 3, label: 'Carol Lee', id: 3, name: 'Carol Lee', email: 'carol@company.com' },
-  {
-    value: 4,
-    label: 'Micheal Jackson',
-    id: 4,
-    name: 'Micheal Jackson',
-    email: 'jackson@company.com',
-  },
-  { value: 5, label: 'Taylor Swift', id: 5, name: 'Taylor Swift', email: 'taylor@company.com' },
-  { value: 6, label: 'Lionel Messi', id: 6, name: 'Lionel Messi', email: 'm10@company.com' },
-  {
-    value: 7,
-    label: 'Cristiano Ronaldo',
-    id: 7,
-    name: 'Cristiano Ronaldo',
-    email: 'cr7@company.com',
-  },
-  { value: 8, label: 'Bùi Lan Hương', id: 8, name: 'Bùi Lan Hương', email: 'blh@company.com' },
-  { value: 9, label: 'Yu Ji Min', id: 9, name: 'Yu Ji Min', email: 'karina_aespa@company.com' },
-  {
-    value: 10,
-    label: 'Uzumaki Naruto',
-    id: 10,
-    name: 'Uzumaki Naruto',
-    email: 'naruto@company.com',
-  },
-  { value: 11, label: 'Uchiha Sasuke', id: 11, name: 'Uchiha Sasuke', email: 'uchiha@company.com' },
-])
-
+const allUsers = ref<SelectOption[]>([])
+const permissionTree = ref<PermissionNode[]>([])
+const loadingPermissions = ref(false)
 const actions: string[] = ['View', 'Create', 'Update', 'Delete']
-
-// Computed Properties
-const canProceed = computed(() => {
-  return currentStep.value === 0 ? role.value.role_name.trim() !== '' : true
-})
-
 const currentStep = ref(0)
 const isEditMode = ref(false)
 const steps = ['Role Details', 'Permissions', 'Assign Users']
 
-// Methods
+// Fetch users and permissions when the component mounts
+onMounted(async () => {
+  console.log('RoleFormComponent mounted, starting fetch')
+  try {
+    loadingPermissions.value = true
+    const userPromise = apiService.get<SelectOption[]>('/user/get-all-user').then(response => {
+      console.log('Users fetched:', response.data)
+      allUsers.value = response.data.map(user => ({
+        value: user.id,
+        label: `${user.name} (${user.email})`,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      }))
+    })
+
+    const permissionPromise = apiService
+      .get<{ pageTree: PermissionNode[] }>('/settings/get-page-tree-structure')
+      .then(response => {
+        console.log('Permission tree response:', response.data)
+        if (response.data && Array.isArray(response.data.pageTree)) {
+          permissionTree.value = response.data.pageTree.map(node => ({
+            ...node,
+            id: Number(node.id)
+          }))
+          console.log('Permission tree set:', permissionTree.value)
+        } else {
+          console.error('Invalid permission tree response:', response.data)
+          permissionTree.value = []
+        }
+      })
+
+    await Promise.allSettled([userPromise, permissionPromise]).then(results => {
+      console.log('Fetch results:', results)
+    })
+  } catch (error) {
+    console.error('Error fetching data:', error)
+    permissionTree.value = []
+  } finally {
+    loadingPermissions.value = false
+    console.log('Loading complete, permissionTree:', permissionTree.value)
+  }
+
+  const roleId = router.currentRoute.value.params.id
+  if (roleId) {
+    isEditMode.value = true
+    console.log('Editing role:', roleId)
+  }
+})
+
+const retryFetchPermissions = async () => {
+  try {
+    loadingPermissions.value = true
+    const response = await apiService.get<{ pageTree: PermissionNode[] }>(
+      '/settings/get-page-tree-structure'
+    )
+    console.log('Retry permission tree response:', response.data)
+    if (response.data && Array.isArray(response.data.pageTree)) {
+      permissionTree.value = response.data.pageTree.map(node => ({
+        ...node,
+        id: Number(node.id)
+      }))
+    } else {
+      console.error('Invalid retry permission tree response:', response.data)
+      permissionTree.value = []
+    }
+  } catch (error) {
+    console.error('Retry fetch error:', error)
+    permissionTree.value = []
+  } finally {
+    loadingPermissions.value = false
+    console.log('Retry complete, permissionTree:', permissionTree.value)
+  }
+}
+
+const canProceed = computed(() => {
+  return currentStep.value === 0 ? role.value.role_name.trim() !== '' : true
+})
+
 const nextStep = () => {
   if (canProceed.value) {
     currentStep.value++
@@ -210,13 +250,11 @@ const prevStep = () => {
 }
 
 const togglePermission = (pageId: number, action: string) => {
-  // Update the permissions object
   if (!role.value.permissions[pageId]) {
     role.value.permissions[pageId] = {} as Record<string, boolean>
   }
   role.value.permissions[pageId][action] = !role.value.permissions[pageId][action]
 
-  // Update the pages array
   const page = role.value.pages.find(p => p.page_id === pageId)
   if (!page) {
     role.value.pages.push({
@@ -246,13 +284,6 @@ const saveRole = async () => {
     }
 
     console.log(roleData)
-
-    // if (role.value.id) {
-    //   await settingsStore.updateRole(roleData)
-    // } else {
-    //   await settingsStore.createRole(roleData)
-    // }
-
     emit('saved')
   } catch (error) {
     console.error('Failed to save role:', error)
@@ -260,26 +291,16 @@ const saveRole = async () => {
 }
 
 const cancel = () => {
-  // Reset form
   role.value = {
     id: 0,
     role_name: '',
     description: '',
     created_by: '',
-    pages: [] as Page[],
+    pages: [],
     assigned: { users: [] },
-    permissions: {} as Record<number, Record<string, boolean>>
+    permissions: {}
   }
   currentStep.value = 0
   router.push('/settings/roles')
 }
-
-// Initialize edit mode if editing an existing role
-onMounted(() => {
-  const roleId = router.currentRoute.value.params.id
-  if (roleId) {
-    isEditMode.value = true
-    console.log('Editing role:', roleId)
-  }
-})
 </script>

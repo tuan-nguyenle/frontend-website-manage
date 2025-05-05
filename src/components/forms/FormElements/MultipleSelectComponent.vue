@@ -1,3 +1,4 @@
+<!-- MultipleSelectComponent.vue -->
 <template>
   <div class="relative" ref="multiSelectRef">
     <div
@@ -36,23 +37,6 @@
           </button>
         </div>
       </div>
-      <!-- <svg
-        class="ml-auto"
-        :class="{ 'transform rotate-180': isOpen }"
-        width="20"
-        height="20"
-        viewBox="0 0 20 20"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M4.79175 7.39551L10.0001 12.6038L15.2084 7.39551"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg> -->
     </div>
     <transition
       enter-active-class="transition duration-100 ease-out"
@@ -133,7 +117,7 @@ const props = defineProps({
   },
   placeholder: {
     type: String,
-    default: 'Select items...',
+    default: 'Searching...',
   },
 })
 
@@ -188,7 +172,6 @@ const isSelected = (item) => {
 const handleClickOutside = (event) => {
   if (isOpen.value && !event.target.closest('.relative')) {
     isOpen.value = false
-    searchQuery.value = ''
   }
 }
 
