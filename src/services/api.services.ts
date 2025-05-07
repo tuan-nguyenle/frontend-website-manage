@@ -24,6 +24,9 @@ class ApiService {
     this.setupInterceptors()
   }
 
+  private isRefreshing = false
+  private refreshSubscribers: ((token: string) => void)[] = []
+
   private setupInterceptors(): void {
     this.api.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
@@ -43,22 +46,37 @@ class ApiService {
         if (
           error.response?.status === 401 &&
           !originalRequest._retry &&
-          originalRequest.url !== '/refresh'
+          originalRequest.url !== '/api/refreshToken'
         ) {
           originalRequest._retry = true
+
+          if (this.isRefreshing) {
+            return new Promise((resolve) => {
+              this.refreshSubscribers.push((token: string) => {
+                originalRequest.headers.Authorization = `Bearer ${token}`
+                resolve(this.api(originalRequest))
+              })
+            })
+          }
+
+          this.isRefreshing = true
           try {
             await authService.refreshToken()
-            const token = authService.getToken()
-            if (token) {
-              originalRequest.headers.Authorization = `Bearer ${token}`
+            const newToken = authService.getToken()
+            if (newToken) {
+              originalRequest.headers.Authorization = `Bearer ${newToken}`
+              this.refreshSubscribers.forEach((callback) => callback(newToken))
+              this.refreshSubscribers = []
               console.log('Retrying original request with new token')
               return this.api(originalRequest)
             }
           } catch (refreshError) {
-            console.error('Token refresh failed in interceptor:', refreshError)
+            console.error('Token refresh failed:', refreshError)
             await authService.signOut()
             router.push('/signin')
             return Promise.reject(refreshError)
+          } finally {
+            this.isRefreshing = false
           }
         }
 
@@ -71,7 +89,6 @@ class ApiService {
           status: error.response?.status || 500,
           errors: error.response?.data?.error,
         }
-
         return Promise.reject(apiError)
       },
     )

@@ -1,6 +1,5 @@
-﻿import { apiService } from './api.services'
-import { authService } from './auth/auth.services'
-import { menuService } from './menu.services'
-import { settingsService } from './setting/settings.services'
-
-export { apiService, authService, menuService, settingsService }
+﻿export { apiService } from './api.services'
+export { authService } from './auth/auth.services'
+export { menuService } from './menu.services'
+export { settingsService } from './setting/settings.services'
+export { userService } from './user/user.services'

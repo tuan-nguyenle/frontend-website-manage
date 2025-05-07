@@ -16,7 +16,7 @@
           class="group inline-flex items-center justify-center gap-2 px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
         >
           <div
-            class="transform relative inline-flex items-center justify-center w-4 h-4 transition-all duration-200 ease-in-out group-hover:rotate-180 group-hover:scale-110"
+            class="transform relative inline-flex items-center justify-center w-4 h-4 transition-all duration-500 ease-in-out group-hover:rotate-180 group-hover:scale-110"
           >
             <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -170,18 +170,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import FilterDrawerComponent from './components/FilterDrawerComponent.vue'
-import { useSettingsStore } from '@/store'
+import { useRoleStore } from '@/store'
 import type { Role } from '@/types'
 
 const router = useRouter()
-const settingsStore = useSettingsStore()
+const roleStore = useRoleStore()
 
 const isLoading = ref(true)
 
 const refreshRoles = async () => {
   isLoading.value = true
   try {
-    await settingsStore.fetchRoles()
+    await roleStore.fetchRoles()
     resetFilters()
     currentPage.value = 1
   } finally {
@@ -191,7 +191,7 @@ const refreshRoles = async () => {
 
 onMounted(async () => {
   try {
-    await settingsStore.fetchRoles()
+    await roleStore.fetchRoles()
   } finally {
     isLoading.value = false
   }
@@ -207,10 +207,10 @@ const searchCreatedBy = ref('')
 const minUsers = ref<number | null>(null)
 const maxUsers = ref<number | null>(null)
 
-const uniqueRoles = computed(() => [...new Set(settingsStore.roles.map((role) => role.role_name))])
+const uniqueRoles = computed(() => [...new Set(roleStore.roles.map((role) => role.role_name))])
 
 const filteredRoles = computed(() => {
-  return settingsStore.roles.filter((role) => {
+  return roleStore.roles.filter((role) => {
     const matchesRole =
       selectedRoles.value.length === 0 || selectedRoles.value.includes(role.role_name)
     const matchesStatus =

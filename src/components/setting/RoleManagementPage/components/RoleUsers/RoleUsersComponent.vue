@@ -18,10 +18,9 @@
 
 <script setup lang="ts">
 import MultipleSelectComponent from '@/components/forms/FormElements/MultipleSelectComponent.vue'
-import { defineProps, defineEmits, ref, computed, onMounted, watch } from 'vue'
+import { defineProps, defineEmits, ref, onMounted, watch } from 'vue'
 
 interface SelectOption {
-  value: number
   label: string
   id: number
   name: string
@@ -44,39 +43,35 @@ const filteredUsers = ref<SelectOption[]>([])
 const selectedUsers = ref<SelectOption[]>(props.role.assigned.users)
 const searchQuery = ref<string>('')
 
-const availableOptions = computed(() => {
-  const selectedIds = new Set(selectedUsers.value.map((user) => user.id))
-  return props.availableUsers.filter((user) => !selectedIds.has(user.id))
-})
-
+// Removed availableOptions computed property since we want to show all users
 const handleSearch = (search: string) => {
   searchQuery.value = search
-  const lowerSearch = search.toLowerCase()
-  const filtered = availableOptions.value
-    .filter((user) =>
-      lowerSearch
-        ? user.name.toLowerCase().includes(lowerSearch) ||
-          user.email.toLowerCase().includes(lowerSearch)
-        : true,
+  if (!search.trim()) {
+    filteredUsers.value = props.availableUsers // Show all users when search is empty
+  } else {
+    const lowerSearch = search.toLowerCase()
+    filteredUsers.value = props.availableUsers.filter(
+      (user) =>
+        user.name.toLowerCase().includes(lowerSearch) ||
+        user.email.toLowerCase().includes(lowerSearch),
     )
-    .slice(0, 5)
-  filteredUsers.value = filtered
+  }
 }
 
 const updateSelectedUsers = (value: SelectOption[]) => {
   selectedUsers.value = value
   emit('update:role', { assigned: { users: value } })
-  handleSearch(searchQuery.value)
+  handleSearch(searchQuery.value) // Refresh filteredUsers to reflect current search
 }
 
 onMounted(() => {
-  handleSearch('')
+  handleSearch('') // Initialize with all users
 })
 
 watch(
   () => props.availableUsers,
   () => {
-    handleSearch(searchQuery.value)
+    handleSearch(searchQuery.value) // Refresh when availableUsers changes
   },
 )
 </script>

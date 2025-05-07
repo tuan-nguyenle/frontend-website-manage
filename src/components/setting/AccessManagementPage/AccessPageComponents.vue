@@ -2,23 +2,23 @@
 import { ref, onMounted } from 'vue'
 import HeaderTableComponents from './components/HeaderTableComponents.vue'
 import PermissionTableComponents from './components/PermissionTableComponents.vue'
-import { useSettingsStore } from '@/store'
+import { usePermissionStore } from '@/store'
 import type { Role } from '@/types'
 
-const settingsStore = useSettingsStore()
+const permissionStore = usePermissionStore()
 const isLoading = ref(false)
 const isSaving = ref(false)
 
 function onSelectRole(role: Role) {
-  settingsStore.selectRole(role)
+  permissionStore.selectRole(role)
 }
 
 // Show overlay while awaiting savePermissions
 async function handleSavePermissions() {
   isSaving.value = true
   try {
-    await settingsStore.savePermissions()
-    await settingsStore.fetchSettings()
+    await permissionStore.savePermissions()
+    await permissionStore.fetchSettings()
   } finally {
     isSaving.value = false
   }
@@ -26,7 +26,7 @@ async function handleSavePermissions() {
 
 onMounted(async () => {
   isLoading.value = true
-  await settingsStore.fetchSettings()
+  await permissionStore.fetchSettings()
   isLoading.value = false
 })
 </script>
@@ -47,8 +47,8 @@ onMounted(async () => {
     </div>
 
     <HeaderTableComponents
-      :roles="settingsStore.roles"
-      :selected-role="settingsStore.selectedRole"
+      :roles="permissionStore.roles"
+      :selected-role="permissionStore.selectedRole"
       @select-role="onSelectRole"
       @save-permissions="handleSavePermissions"
     />
@@ -60,16 +60,16 @@ onMounted(async () => {
       <span class="text-gray-500 dark:text-gray-400">{{ $t('Loading permissions') }}...</span>
     </div>
     <PermissionTableComponents
-      v-else-if="settingsStore.selectedRole && settingsStore.pageTree.length"
-      :permission-tree="settingsStore.pageTree"
-      :role-permissions="settingsStore.editedPermissions"
+      v-else-if="permissionStore.selectedRole && permissionStore.pageTree.length"
+      :permission-tree="permissionStore.pageTree"
+      :role-permissions="permissionStore.editedPermissions"
       :actions="['View', 'Delete', 'Edit', 'Manage']"
-      @toggle-permission="(pageId, action) => settingsStore.togglePermission(pageId, action)"
+      @toggle-permission="(pageId, action) => permissionStore.togglePermission(pageId, action)"
     />
 
     <div v-else class="text-center text-gray-500 dark:text-gray-400">
       {{
-        settingsStore.roles.length === 0
+        permissionStore.roles.length === 0
           ? $t('No roles available')
           : $t('Select a role to view permissions')
       }}
