@@ -3,6 +3,7 @@
     <SidebarProvider>
       <LocaleSwitcher />
       <RouterView />
+      <ToastContainer />
     </SidebarProvider>
   </ThemeProvider>
 </template>
@@ -11,4 +12,5 @@
 import ThemeProvider from './components/layout/ThemeProvider.vue'
 import SidebarProvider from './components/layout/SidebarProvider.vue'
 import LocaleSwitcher from './components/common/LocaleSwitcherComponents.vue'
+import ToastContainer from './components/common/ToastContainer.vue';
 </script>

@@ -43,16 +43,14 @@
       v-model:isOpen="isDrawerOpen"
       :unique-roles="uniqueRoles"
       :selected-roles="selectedRoles"
-      :select-all-roles="selectAllRoles"
       :selected-statuses="selectedStatuses"
       :select-all-statuses="selectAllStatuses"
-      @toggle-all-roles="toggleAllRoles"
-      @toggle-role="toggleRole"
       @toggle-all-statuses="toggleAllStatuses"
       @toggle-status="toggleStatus"
       @reset="resetFilters"
       @apply-search="applySearchValues"
       @close="closeDrawer"
+      @update-selected-roles="updateSelectedRoles"
     />
 
     <!-- Loading indicator -->
@@ -68,6 +66,7 @@
       <table class="w-full table-fixed">
         <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
+            <th class="p-4 text-left text-base font-medium text-gray-900 dark:text-white">ID</th>
             <th class="p-4 text-left text-base font-medium text-gray-900 dark:text-white">
               Role Name
             </th>
@@ -96,6 +95,9 @@
             :key="role.id"
             class="hover:bg-gray-50 dark:hover:bg-gray-800/50"
           >
+            <td class="p-4 text-md text-gray-900 dark:text-white">
+              {{ role.id }}
+            </td>
             <td class="p-4 text-md text-gray-900 dark:text-white">
               {{ role.role_name }}
             </td>
@@ -167,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import FilterDrawerComponent from './components/FilterDrawerComponent.vue'
 import { useRoleStore } from '@/store'
@@ -198,21 +200,25 @@ onMounted(async () => {
 })
 
 const isDrawerOpen = ref(false)
-const selectedRoles = ref<string[]>([])
+const selectedRoles = ref<{ label: string; value: string }[]>([])
 const selectedStatuses = ref<string[]>([])
-const selectAllRoles = ref(false)
 const selectAllStatuses = ref(false)
 const searchDescription = ref('')
 const searchCreatedBy = ref('')
 const minUsers = ref<number | null>(null)
 const maxUsers = ref<number | null>(null)
 
-const uniqueRoles = computed(() => [...new Set(roleStore.roles.map((role) => role.role_name))])
+const uniqueRoles = computed(() => {
+  return roleStore.roles.map((role) => ({ label: role.role_name, value: role.role_name }))
+})
 
 const filteredRoles = computed(() => {
   return roleStore.roles.filter((role) => {
     const matchesRole =
-      selectedRoles.value.length === 0 || selectedRoles.value.includes(role.role_name)
+      selectedRoles.value.length === 0 ||
+      selectedRoles.value.some(
+        (selected) => selected.value.trim().toLowerCase() === role.role_name.trim().toLowerCase(),
+      )
     const matchesStatus =
       selectedStatuses.value.length === 0 || selectedStatuses.value.includes(role.status)
     const matchesDescription =
@@ -238,6 +244,17 @@ const paginatedRoles = computed(() => {
 
 const totalPages = computed(() => Math.ceil(filteredRoles.value.length / itemsPerPage))
 
+// Reset currentPage when filters change
+watch(
+  [selectedRoles, selectedStatuses, searchDescription, searchCreatedBy, minUsers, maxUsers],
+  () => {
+    if (currentPage.value > totalPages.value) {
+      currentPage.value = 1
+    }
+  },
+  { deep: true },
+)
+
 const openDrawer = () => {
   isDrawerOpen.value = true
 }
@@ -246,22 +263,9 @@ const closeDrawer = () => {
   isDrawerOpen.value = false
 }
 
-const toggleAllRoles = () => {
-  selectAllRoles.value = !selectAllRoles.value
-  if (selectAllRoles.value) {
-    selectedRoles.value = uniqueRoles.value
-  } else {
-    selectedRoles.value = []
-  }
-}
-
-const toggleRole = (role: string) => {
-  const index = selectedRoles.value.indexOf(role)
-  if (index > -1) {
-    selectedRoles.value.splice(index, 1)
-  } else {
-    selectedRoles.value.push(role)
-  }
+const updateSelectedRoles = (roles: { label: string; value: string }[]) => {
+  console.log('Selected Roles Updated:', roles)
+  selectedRoles.value = roles
 }
 
 const toggleAllStatuses = () => {
@@ -285,7 +289,6 @@ const toggleStatus = (status: string) => {
 const resetFilters = () => {
   selectedRoles.value = []
   selectedStatuses.value = []
-  selectAllRoles.value = false
   selectAllStatuses.value = false
   searchDescription.value = ''
   searchCreatedBy.value = ''

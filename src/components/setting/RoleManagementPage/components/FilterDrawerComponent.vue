@@ -26,26 +26,15 @@
         <!-- Role Name Filter -->
         <div class="mb-4">
           <h4 class="font-semibold mb-2 text-gray-900 dark:text-gray-300">Role Name</h4>
-          <div class="flex items-center mb-2">
-            <input
-              type="checkbox"
-              :checked="props.selectAllRoles"
-              @change="emit('toggle-all-roles')"
-              class="mr-2"
-              id="select-all-roles"
-            />
-            <label for="select-all-roles" class="dark:text-gray-300">Select All</label>
-          </div>
-          <div v-for="role in props.uniqueRoles" :key="role" class="flex items-center mb-2">
-            <input
-              type="checkbox"
-              :checked="props.selectedRoles.includes(role)"
-              @change="emit('toggle-role', role)"
-              class="mr-2"
-              :id="`role-${role}`"
-            />
-            <label :for="`role-${role}`" class="dark:text-gray-300">{{ role }}</label>
-          </div>
+          <MultipleSelectComponent
+            :model-value="mutableSelectedRoles"
+            @update:model-value="updateSelectedRoles"
+            :options="mutableUniqueRoles"
+            :multiple="true"
+            :searchable="true"
+            placeholder="Search by role name..."
+            class="w-full"
+          />
         </div>
         <!-- Description Filter -->
         <div class="mb-4">
@@ -148,23 +137,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import MultipleSelectComponent from '@/components/forms/FormElements/MultipleSelectComponent.vue'
 
 interface Props {
   isOpen: boolean
-  uniqueRoles: readonly string[]
-  selectedRoles: readonly string[]
-  selectAllRoles: boolean
+  uniqueRoles: readonly { label: string; value: string }[]
+  selectedRoles: readonly { label: string; value: string }[]
   selectedStatuses: readonly string[]
   selectAllStatuses: boolean
 }
-
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'toggle-all-roles'): void
-  (e: 'toggle-role', role: string): void
+  (e: 'update-selected-roles', roles: { label: string; value: string }[]): void
   (e: 'toggle-all-statuses'): void
   (e: 'toggle-status', status: string): void
   (e: 'reset'): void
@@ -179,11 +166,26 @@ const emit = defineEmits<{
   ): void
 }>()
 
+// Convert readonly arrays to mutable arrays before passing to MultipleSelectComponent
+const mutableUniqueRoles = computed(() =>
+  props.uniqueRoles.map((role) => ({ ...role, id: role.value })),
+)
+
+// Transform selectedRoles to include id based on value
+const mutableSelectedRoles = computed(() =>
+  props.selectedRoles.map((role) => ({ ...role, id: role.value })),
+)
 // Search filters
 const searchDescription = ref('')
 const searchCreatedBy = ref('')
 const minUsers = ref<number | null>(null)
 const maxUsers = ref<number | null>(null)
+
+const updateSelectedRoles = (roles: { label: string; value: string; id: string }[]) => {
+  // Map back to original format without id for parent component
+  const originalRoles = roles.map(({ label, value }) => ({ label, value }))
+  emit('update-selected-roles', originalRoles)
+}
 
 // Reset search inputs when drawer opens
 watch(

@@ -9,7 +9,7 @@ import miscRoutes from './misc/misc.router'
 import authRouter from './auth/auth.router'
 import settingRouter from './settings/setting.router'
 
-import { useAuthStore } from '@/store/auth.stores'
+import { useAuthStore } from '@/store/auth.store'
 import { storeToRefs } from 'pinia'
 
 const router = createRouter({

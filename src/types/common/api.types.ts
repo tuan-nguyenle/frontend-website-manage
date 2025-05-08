@@ -5,7 +5,7 @@
 }
 
 export interface ApiError {
-  // message: string
+  messages: string
   status: number
   errors?: Record<string, string>
 }

@@ -37,7 +37,6 @@ export const useRoleStore = defineStore('role', {
         })
         return newRole
       } catch (error) {
-        console.error('Failed to create role:', error)
         throw error
       }
     },

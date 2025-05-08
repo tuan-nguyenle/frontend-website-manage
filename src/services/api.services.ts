@@ -85,10 +85,17 @@ class ApiService {
           return Promise.reject(error)
         }
 
+        if (error.response?.status === 401) {
+          await authService.signOut()
+          router.push('/signin')
+        }
+
         const apiError: ApiError = {
           status: error.response?.status || 500,
-          errors: error.response?.data?.error,
+          errors: error.response?.data?.errors,
+          messages: error.response?.data?.messages,
         }
+
         return Promise.reject(apiError)
       },
     )
