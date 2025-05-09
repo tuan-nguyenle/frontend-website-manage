@@ -46,6 +46,17 @@ const emit = defineEmits<{
 const role_name = ref(props.role.role_name)
 const description = ref(props.role.description)
 
+// Sync local refs with prop changes
+watch(
+  () => props.role,
+  (newRole) => {
+    role_name.value = newRole.role_name
+    description.value = newRole.description
+  },
+  { immediate: true },
+)
+
+// Emit updates when local state changes
 watch(role_name, (newValue) => {
   emit('update:role', { role_name: newValue, description: description.value })
 })

@@ -40,7 +40,12 @@ const emit = defineEmits<{
 }>()
 
 const filteredUsers = ref<SelectOption[]>([])
-const selectedUsers = ref<SelectOption[]>(props.role.assigned.users)
+const selectedUsers = ref<SelectOption[]>(
+  props.role.assigned.users.map((user) => ({
+    ...user,
+    label: user.name,
+  })),
+)
 const searchQuery = ref<string>('')
 
 // Removed availableOptions computed property since we want to show all users

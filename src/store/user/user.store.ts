@@ -15,7 +15,6 @@ export const useUserStore = defineStore('user', {
         const users = await userService.fetchAllUsers()
         this.users = users
       } catch (error) {
-        console.error('Failed to fetch users:', error)
         throw error
       }
     },

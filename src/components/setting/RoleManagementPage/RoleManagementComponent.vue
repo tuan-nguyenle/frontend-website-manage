@@ -66,7 +66,7 @@
       <table class="w-full table-fixed">
         <thead class="bg-gray-50 dark:bg-gray-700">
           <tr>
-            <th class="p-4 text-left text-base font-medium text-gray-900 dark:text-white">ID</th>
+            <th class="p-4 text-left text-base font-medium text-gray-900 dark:text-white">Index</th>
             <th class="p-4 text-left text-base font-medium text-gray-900 dark:text-white">
               Role Name
             </th>
@@ -91,12 +91,12 @@
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
           <tr
-            v-for="role in paginatedRoles"
+            v-for="(role, index) in paginatedRoles"
             :key="role.id"
             class="hover:bg-gray-50 dark:hover:bg-gray-800/50"
           >
             <td class="p-4 text-md text-gray-900 dark:text-white">
-              {{ role.id }}
+              {{ (currentPage - 1) * itemsPerPage + index + 1 }}
             </td>
             <td class="p-4 text-md text-gray-900 dark:text-white">
               {{ role.role_name }}
@@ -172,11 +172,13 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import FilterDrawerComponent from './components/FilterDrawerComponent.vue'
-import { useRoleStore } from '@/store'
+import { useRoleStore, useUserStore, usePermissionStore } from '@/store'
 import type { Role } from '@/types'
 
 const router = useRouter()
 const roleStore = useRoleStore()
+const userStore = useUserStore()
+const permissionStore = usePermissionStore()
 
 const isLoading = ref(true)
 
@@ -193,7 +195,13 @@ const refreshRoles = async () => {
 
 onMounted(async () => {
   try {
-    await roleStore.fetchRoles()
+    await Promise.allSettled([
+      userStore.fetchAllUsers(),
+      permissionStore.fetchPermissionTree(),
+      roleStore.fetchRoles(),
+    ])
+  } catch (error) {
+    console.error('Critical error in data loading:', error)
   } finally {
     isLoading.value = false
   }

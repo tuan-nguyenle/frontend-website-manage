@@ -44,7 +44,7 @@ export const settingsService = {
     return data.pageTree.map(convertIds)
   },
 
-  async fetchRole(id: number): Promise<Role> {
+  async fetchRoleById(id: number): Promise<Role> {
     const { data } = await apiService.get<Role>(`/settings/roles/${id}`)
     return data
   },

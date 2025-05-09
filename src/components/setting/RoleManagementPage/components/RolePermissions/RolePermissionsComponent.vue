@@ -4,6 +4,7 @@
     <h2 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white/90">Assign Permissions</h2>
     <div v-if="loading" class="text-center py-8" role="status" aria-label="Loading permissions">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
+      <p class="mt-2 text-gray-500 dark:text-gray-400">Loading permissions...</p>
     </div>
     <div
       v-else-if="permissionTree.length === 0"
@@ -57,8 +58,9 @@
               <input
                 v-if="entry.node.children.length === 0"
                 type="checkbox"
-                :checked="props.role.permissions[entry.node.id]?.[action] || false"
+                :checked="(props.role.permissions?.[entry.node.id] || {})[action] || false"
                 @change="togglePermission(entry.node.id, action)"
+                @click.stop
                 class="w-4 h-4 text-indigo-500 border-gray-500 rounded focus:ring-indigo-400 cursor-pointer"
               />
             </td>
@@ -70,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, ref, computed, watch } from 'vue'
+import { defineProps, defineEmits, ref, computed } from 'vue'
 
 const props = defineProps<{
   actions: string[]
@@ -83,7 +85,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'toggle-permission', pageId: number, action: string): void
-  (e: 'retry-fetch'): void
 }>()
 
 interface PermissionNode {
@@ -93,15 +94,6 @@ interface PermissionNode {
 }
 
 const expanded = ref<Record<number, boolean>>({})
-const permissionTree = ref<PermissionNode[]>(props.permissionTree)
-
-watch(
-  () => props.permissionTree,
-  (newTree) => {
-    permissionTree.value = newTree
-  },
-  { deep: true, immediate: true },
-)
 
 const flattenedPermissions = computed(() => {
   const result: { node: PermissionNode; depth: number }[] = []
@@ -117,7 +109,7 @@ const flattenedPermissions = computed(() => {
       }
     }
   }
-  flatten(permissionTree.value)
+  flatten(props.permissionTree)
   return result
 })
 

@@ -3,27 +3,23 @@ import RoleDetailsComponent from './RoleDetails/RoleDetailsComponent.vue'
 import RolePermissionsComponent from './RolePermissions/RolePermissionsComponent.vue'
 import RoleUsersComponent from './RoleUsers/RoleUsersComponent.vue'
 import { useToast } from '@/composables/useToast'
-import { useRouter } from 'vue-router'
-import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
 import { useRoleStore, useAuthStore, useUserStore, usePermissionStore } from '@/store'
 import type { ExtendedRole, PermissionNode, Item } from '@/types'
 import { useI18n } from 'vue-i18n'
 
-interface User {
-  id: string | number
-  name: string
-  email: string
-}
-
-const { showToast } = useToast()
+// Initialize composables and stores
 const { t } = useI18n()
+const { showToast } = useToast()
 const router = useRouter()
+const route = useRoute()
 const roleStore = useRoleStore()
 const authStore = useAuthStore()
 const userStore = useUserStore()
 const permissionStore = usePermissionStore()
 
-// Reactive state
+// Reactive state for the role
 const role = ref<ExtendedRole>({
   id: 0,
   role_name: '',
@@ -36,24 +32,23 @@ const role = ref<ExtendedRole>({
   number_of_user: 0,
 })
 
+// Additional reactive state
 const allUsers = ref<Item[]>([])
 const permissionTree = ref<PermissionNode[]>([])
 const loadingPermissions = ref(false)
 const currentStep = ref(0)
 const isEditMode = ref(false)
 const isSubmitting = ref(false)
-const hasUnsavedChanges = ref(false)
 
 // Static data
 const steps = ['Role Details', 'Permissions', 'Assign Users']
 const actions = ['View', 'Create', 'Update', 'Delete']
 
-// Validation states
+// Validation states and computed properties
 const showRoleNameError = ref(false)
 const showPermissionsError = ref(false)
 const showUsersAssignedError = ref(false)
 
-// Validation computed properties
 const isRoleNameValid = computed(() => role.value.role_name.trim() !== '')
 const hasPermissions = computed(() =>
   Object.values(role.value.permissions).some((pagePerms) =>
@@ -62,7 +57,6 @@ const hasPermissions = computed(() =>
 )
 const hasUsersAssigned = computed(() => role.value.assigned.users.length > 0)
 
-// Error messages
 const roleNameError = computed(() =>
   showRoleNameError.value && !isRoleNameValid.value ? t('Role name is required') : '',
 )
@@ -77,32 +71,60 @@ const usersAssignedError = computed(() =>
     : '',
 )
 
-// Watch for unsaved changes
-watch(
-  () => role.value,
-  () => {
-    if (!isEditMode.value || role.value.id !== 0) {
-      hasUnsavedChanges.value = true
-    }
-  },
-  { deep: true },
-)
-
-// Fetch initial data
+// Load initial data and handle edit mode
 onMounted(async () => {
   try {
     loadingPermissions.value = true
-    await Promise.all([userStore.fetchAllUsers(), permissionStore.fetchPermissionTree()])
+
+    if (!permissionStore.permissions.length) {
+      await permissionStore.fetchPermissionTree()
+    }
     permissionTree.value = permissionStore.permissions.map((permission: PermissionNode) => ({
       ...permission,
       children: permission.children.map((child) => ({ ...child, children: [] })),
     }))
-    allUsers.value = userStore.users.map((user: User) => ({
+
+    if (!userStore.users.length) {
+      await userStore.fetchAllUsers()
+    }
+    allUsers.value = userStore.users.map((user: { id: string; name: string; email: string }) => ({
       id: Number(user.id),
       label: user.name,
       name: user.name,
       email: user.email,
     }))
+
+    const roleId = route.params.id
+    if (roleId) {
+      isEditMode.value = true
+      try {
+        const fetchedRole = await roleStore.fetchRoleById(Number(roleId))
+        role.value = {
+          ...fetchedRole,
+          permissions: fetchedRole.pages.reduce(
+            (
+              acc: Record<number, Record<string, boolean>>,
+              page: { page_id: number; permissions: [] },
+            ) => {
+              acc[page.page_id] = page.permissions.reduce(
+                (permAcc, perm) => {
+                  permAcc[perm] = true
+                  return permAcc
+                },
+                {} as Record<string, boolean>,
+              )
+              return acc
+            },
+            {} as Record<number, Record<string, boolean>>,
+          ),
+        } as ExtendedRole
+        console.log(role.value)
+      } catch (error) {
+        console.error('Error fetching role:', error)
+        showToast('error', 'Error Fetching Role', 'Failed to fetch role data.')
+        router.push('/settings/roles')
+      }
+    }
   } catch (error) {
     console.error('Error fetching data:', error)
     showToast('error', 'Error Loading Data', 'Failed to load required data.')
@@ -111,7 +133,7 @@ onMounted(async () => {
   }
 })
 
-// Centralized validation function
+// Step validation
 const validateStep = (step: number): boolean => {
   if (step === 0 && !isRoleNameValid.value) {
     showRoleNameError.value = true
@@ -131,7 +153,7 @@ const validateStep = (step: number): boolean => {
   return true
 }
 
-// Navigation functions
+// Navigation between steps
 const nextStep = () => {
   if (validateStep(currentStep.value) && currentStep.value < steps.length - 1) {
     currentStep.value++
@@ -147,7 +169,7 @@ const prevStep = () => {
   }
 }
 
-// Permission toggle
+// Toggle permissions
 const togglePermission = (pageId: number, action: string) => {
   if (!role.value.permissions[pageId]) {
     role.value.permissions[pageId] = {}
@@ -155,11 +177,10 @@ const togglePermission = (pageId: number, action: string) => {
   role.value.permissions[pageId][action] = !role.value.permissions[pageId][action]
 }
 
-// Save role
+// Save role to store
 const saveRole = async () => {
   if (isSubmitting.value) return
 
-  // Validate all steps
   if (!validateStep(0)) {
     currentStep.value = 0
     return
@@ -195,7 +216,6 @@ const saveRole = async () => {
     .createRole(roleData)
     .then(() => {
       showToast('success', isEditMode.value ? 'Role Updated' : 'Role Created', 'Role saved.')
-      hasUnsavedChanges.value = false
       router.push('/settings/roles')
     })
     .catch((error) => {
@@ -206,7 +226,7 @@ const saveRole = async () => {
     })
 }
 
-// Cancel action
+// Cancel and reset form
 const cancel = () => {
   role.value = {
     id: 0,
@@ -232,6 +252,7 @@ const cancel = () => {
       {{ isEditMode ? $t('Edit Role') : $t('Create Role') }}
     </h1>
 
+    <!-- Stepper -->
     <div class="flex mb-6">
       <div v-for="(step, idx) in steps" :key="step" class="flex-1 flex items-center">
         <div
@@ -252,6 +273,7 @@ const cancel = () => {
       </div>
     </div>
 
+    <!-- Step Components -->
     <div v-if="currentStep === 0">
       <RoleDetailsComponent
         :role="role"
@@ -289,6 +311,7 @@ const cancel = () => {
       />
     </div>
 
+    <!-- Navigation Buttons -->
     <div class="flex justify-between mt-8">
       <button
         @click="cancel"
